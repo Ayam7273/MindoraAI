@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Check, ChevronLeft, Download } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { StatusBar } from "@/components/ui/StatusBar";
 
 const TODAY = [
   { id: "m1", kind: "mindora", title: "Message from Mindora AI", sub: "32 Total Unread Messages ⚠️", color: "bg-[var(--color-accent-green)]", href: "/notifications/smart/therapy" },
@@ -53,7 +52,6 @@ export function NotificationsScreen() {
 
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-28">
-      <StatusBar />
       <header className="flex items-center gap-2 border-b border-[var(--color-border)] bg-white px-2 py-2">
         <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full" aria-label="Back">
           <ChevronLeft className="h-6 w-6 text-[#3B2A1A]" />

@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { ChevronRight, Play } from "lucide-react";
-import { StatusBar } from "@/components/ui/StatusBar";
 
 const ARTICLES = [
   { id: "1", title: "Mental Health in the workplace", cat: "Mental Health" },
@@ -15,7 +14,6 @@ const COURSES = [
 export function ResourcesScreen() {
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-28">
-      <StatusBar />
       <header className="rounded-b-3xl bg-[#3B2A1A] px-4 pb-6 pt-[max(0.5rem,env(safe-area-inset-top))] text-[#FAF8F4]">
         <h1 className="text-xl font-bold">Our Resources</h1>
         <p className="mt-1 text-sm text-white/70">

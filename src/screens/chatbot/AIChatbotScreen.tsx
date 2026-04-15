@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronRight, MessageSquarePlus, Mic } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { StatusBar } from "@/components/ui/StatusBar";
 import { useUiStore } from "@/store/uiStore";
 
 const CONVERSATIONS = [
@@ -17,7 +16,6 @@ export function AIChatbotScreen() {
 
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-28">
-      <StatusBar />
       <header className="rounded-b-3xl bg-[#3B2A1A] px-4 pb-8 pt-[max(0.5rem,env(safe-area-inset-top))] text-[#FAF8F4]">
         <div className="flex items-start gap-3">
           <div className="text-5xl" aria-hidden>

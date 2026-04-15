@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
-import { StatusBar } from "@/components/ui/StatusBar";
 import { cn } from "@/lib/utils";
 
 export interface RouteErrorLayoutProps {
@@ -24,7 +23,6 @@ export function RouteErrorLayout({
 
   return (
     <div className={cn("flex min-h-dvh flex-col bg-[#FAF8F4]", className)}>
-      <StatusBar />
       <header className="flex items-center px-2 py-1">
         <button
           type="button"

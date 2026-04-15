@@ -1,7 +1,6 @@
 import { Bell, Heart, MessageCircle, Share2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/Card";
-import { StatusBar } from "@/components/ui/StatusBar";
 
 const CHIPS = ["Trending", "Stress", "Suicide", "Mindfulness", "Support"];
 
@@ -11,7 +10,6 @@ export function CommunityScreen() {
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-28">
       <div className="bg-[#3B2A1A] text-[#FAF8F4]">
-        <StatusBar className="!bg-[#3B2A1A] !text-[#FAF8F4]" />
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="h-10 w-10 rounded-full bg-white/20" />
           <div className="min-w-0 flex-1">

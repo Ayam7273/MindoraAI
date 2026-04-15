@@ -14,7 +14,6 @@ import { Link, useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { MoodEmoji } from "@/components/ui/MoodEmoji";
 import { ProgressRing } from "@/components/ui/ProgressRing";
-import { StatusBar } from "@/components/ui/StatusBar";
 import { cn } from "@/lib/utils";
 import { useMindoraScore } from "@/hooks/useMindoraScore";
 import { useUiStore } from "@/store/uiStore";
@@ -46,7 +45,6 @@ export function HomeScreen() {
 
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-4">
-      <StatusBar />
       <header className="bg-[#3B2A1A] px-4 pb-5 pt-2 text-[#FAF8F4]">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-3">

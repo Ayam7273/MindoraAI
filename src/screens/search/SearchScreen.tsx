@@ -3,7 +3,6 @@ import { ChevronLeft, ChevronRight, Filter, SlidersHorizontal } from "lucide-rea
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
-import { StatusBar } from "@/components/ui/StatusBar";
 import { Toggle } from "@/components/ui/Toggle";
 import { cn } from "@/lib/utils";
 
@@ -50,7 +49,6 @@ export function SearchScreen() {
 
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-28">
-      <StatusBar />
       <header className="bg-[#3B2A1A] px-3 pb-4 pt-[max(0.5rem,env(safe-area-inset-top))] text-[#FAF8F4]">
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10" aria-label="Back">

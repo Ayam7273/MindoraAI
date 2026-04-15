@@ -2,7 +2,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { StatusBar } from "@/components/ui/StatusBar";
 import { cn } from "@/lib/utils";
 
 const HEAT = Array.from({ length: 35 }, (_, i) => ({ i, v: [0, 1, 2, 0, 1, 2, 2][i % 7] }));
@@ -12,7 +11,6 @@ export function JournalScreen() {
 
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-28">
-      <StatusBar />
       <div className="relative overflow-hidden rounded-b-[var(--radius-xl)] bg-[#3B2A1A] px-5 pb-16 pt-4 text-white">
         <p className="text-4xl font-bold">34</p>
         <p className="text-sm text-white/70">Journals this year</p>

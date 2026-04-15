@@ -3,7 +3,6 @@ import { ChevronLeft, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { MoodEmoji } from "@/components/ui/MoodEmoji";
-import { StatusBar } from "@/components/ui/StatusBar";
 import { useMindoraScore } from "@/hooks/useMindoraScore";
 import { useUiStore } from "@/store/uiStore";
 import type { MoodKey } from "@/types";
@@ -34,7 +33,6 @@ export function MoodTrackerScreen() {
 
   return (
     <div className="min-h-dvh" style={{ background: BG[currentMood] }}>
-      <StatusBar />
       <header className="flex items-center px-2 py-1 text-[#3B2A1A]">
         <button
           type="button"
