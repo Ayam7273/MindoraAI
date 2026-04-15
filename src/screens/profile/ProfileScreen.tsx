@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { Toggle } from "@/components/ui/Toggle";
-import { useFreudScore } from "@/hooks/useFreudScore";
+import { useMindoraScore } from "@/hooks/useMindoraScore";
 import { useUpdateProfile } from "@/hooks/useProfile";
 import { signOut } from "@/services/authService";
 import { useUiStore } from "@/store/uiStore";
@@ -25,7 +25,7 @@ export function ProfileScreen() {
   const setDarkMode = useUiStore((s) => s.setDarkMode);
   const isPro = Boolean(useUiStore((s) => s.profile?.is_pro));
   const updateProfile = useUpdateProfile();
-  const { score } = useFreudScore(userId);
+  const { score } = useMindoraScore(userId);
 
   return (
     <div className="min-h-dvh bg-[#FAF8F4] px-4 pb-28 pt-4">

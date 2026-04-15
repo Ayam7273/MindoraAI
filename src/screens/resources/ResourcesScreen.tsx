@@ -28,7 +28,7 @@ export function ResourcesScreen() {
           <div className="h-36 bg-gradient-to-br from-amber-100 to-orange-200" />
           <div className="p-4">
             <p className="text-xs font-bold uppercase text-[var(--color-accent-green)]">Featured</p>
-            <p className="mt-1 text-base font-bold text-[#3B2A1A]">Freud App: Your Pocket Therapist for Mental Wellness</p>
+            <p className="mt-1 text-base font-bold text-[#3B2A1A]">Mindora AI: Your Pocket Companion for Mental Wellness</p>
             <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-accent-orange)]">
               Read more <ChevronRight className="h-3 w-3" />
             </span>

@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { StatusBar } from "@/components/ui/StatusBar";
 
 const TODAY = [
-  { id: "m1", kind: "freud", title: "Message from Dr Freud AI", sub: "32 Total Unread Messages ⚠️", color: "bg-[var(--color-accent-green)]", href: "/notifications/smart/therapy" },
+  { id: "m1", kind: "mindora", title: "Message from Mindora AI", sub: "32 Total Unread Messages ⚠️", color: "bg-[var(--color-accent-green)]", href: "/notifications/smart/therapy" },
   { id: "j1", kind: "journal", title: "Journal Incomplete!", sub: "23m Remaining Time ⚠️", color: "bg-purple-500", href: "/notifications/smart/journal", ring: "8/32" },
   { id: "e1", kind: "exercise", title: "Exercise Complete!", sub: "15m Breathing Done ✓", color: "bg-[#8B7355]", href: "/notifications/smart/meditation" },
   { id: "d1", kind: "data", title: "Mental Health Data is Here", sub: "Your Monthly Mental Analysis is here", color: "bg-[var(--color-accent-yellow)]", href: "/home" },
@@ -13,7 +13,7 @@ const TODAY = [
 
 const LAST_WEEK = [
   { id: "s1", kind: "stress", title: "Stress Decreased", sub: "Stress Level is now 3", color: "bg-[var(--color-accent-orange)]", href: "/notifications/smart/stress" },
-  { id: "r1", kind: "rec", title: "Dr Freud Recommendations", sub: "48 Health Recommendations", color: "bg-[#8B7355]", href: "/home" },
+  { id: "r1", kind: "rec", title: "Mindora Recommendations", sub: "48 Health Recommendations", color: "bg-[#8B7355]", href: "/home" },
 ];
 
 function Row({

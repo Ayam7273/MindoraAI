@@ -16,7 +16,7 @@ import { MoodEmoji } from "@/components/ui/MoodEmoji";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { StatusBar } from "@/components/ui/StatusBar";
 import { cn } from "@/lib/utils";
-import { useFreudScore } from "@/hooks/useFreudScore";
+import { useMindoraScore } from "@/hooks/useMindoraScore";
 import { useUiStore } from "@/store/uiStore";
 
 const ARTICLES = [
@@ -30,7 +30,7 @@ export function HomeScreen() {
   const userId = useUiStore((s) => s.user?.id);
   const displayName = useUiStore((s) => s.profile?.full_name ?? "Friend");
   const isPro = Boolean(useUiStore((s) => s.profile?.is_pro));
-  const { score, mood: currentMood } = useFreudScore(userId);
+  const { score, mood: currentMood } = useMindoraScore(userId);
   const today = format(new Date(), "EEEE, MMM d");
 
   const moodLabel =
@@ -85,11 +85,11 @@ export function HomeScreen() {
       <div className="-mt-4 space-y-5 px-4">
         <div className="flex gap-3 overflow-x-auto pb-1 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <Link
-            to="/freud-score"
+            to="/mindora-score"
             className="flex min-w-[9.5rem] shrink-0 flex-col rounded-[var(--radius-xl)] bg-[var(--color-accent-green-light)] p-4 ring-1 ring-[var(--color-accent-green)]/30"
           >
             <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-accent-green)]">
-              Freud Score
+              Mindora Score
             </span>
             <span className="mt-1 text-3xl font-bold text-[var(--color-primary)]">{score}</span>
             <span className="text-xs text-[var(--color-text-secondary)]">Mentally Stable</span>

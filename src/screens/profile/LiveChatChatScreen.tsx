@@ -3,7 +3,7 @@ import { ChevronLeft, Paperclip, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const SEED = [
-  { id: "1", who: "bot" as const, text: "Hi! I'm the Freud.ai triage bot. A specialist will join shortly.", t: "09:41" },
+  { id: "1", who: "bot" as const, text: "Hi! I'm the Mindora AI triage bot. A specialist will join shortly.", t: "09:41" },
   { id: "2", who: "agent" as const, text: "Hello — thanks for reaching out. What's going on today?", t: "09:42" },
 ];
 

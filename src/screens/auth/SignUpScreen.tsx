@@ -1,7 +1,7 @@
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FreudLogo } from "@/components/brand/FreudLogo";
+import { MindoraLogo } from "@/components/brand/MindoraLogo";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { signUp } from "@/services/authService";
@@ -40,7 +40,7 @@ export function SignUpScreen() {
       style={{ fontFamily: "var(--font-sans)" }}
     >
       <div className="flex flex-col items-center">
-        <FreudLogo size={52} variant="brown" className="text-[var(--color-primary)]" />
+        <MindoraLogo size={52} variant="brown" className="text-[var(--color-primary)]" />
         <h1
           className="mt-6 text-center text-[1.35rem] font-semibold text-[var(--color-primary)]"
           style={{ fontFamily: "var(--font-serif)" }}

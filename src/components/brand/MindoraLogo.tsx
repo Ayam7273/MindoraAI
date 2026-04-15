@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils";
 
-interface FreudLogoProps {
+interface MindoraLogoProps {
   className?: string;
   size?: number;
   variant?: "cream" | "white" | "brown";
 }
 
-/** Four-petal flower mark for Freud.ai */
-export function FreudLogo({ className, size = 48, variant = "brown" }: FreudLogoProps) {
+/** Four-petal flower mark for Mindora AI. */
+export function MindoraLogo({ className, size = 48, variant = "brown" }: MindoraLogoProps) {
   const fill =
     variant === "white" ? "#ffffff" : variant === "cream" ? "#faf8f4" : "currentColor";
 
@@ -38,3 +38,4 @@ export function FreudLogo({ className, size = 48, variant = "brown" }: FreudLogo
     </svg>
   );
 }
+

@@ -8,11 +8,11 @@ const CONFIG: Record<
 > = {
   score: {
     emoji: "🎉",
-    title: "+8 Freud Score Increased",
+    title: "+8 Mindora Score Increased",
     body: "You're 26% happier compared to last month. Congrats! 🥳",
     badge: "Score Now: 88.5",
     cta: "See Score 📈",
-    to: "/freud-score",
+    to: "/mindora-score",
   },
   journal: {
     emoji: "📓",
@@ -23,8 +23,8 @@ const CONFIG: Record<
   },
   therapy: {
     emoji: "📱",
-    title: "05:25AM Therapy with Dr. Freud AI",
-    body: "You have a therapy session with Dr. Freud AI in 8h 21m from now.",
+    title: "05:25AM Session with Mindora AI",
+    body: "You have a session with Mindora AI in 8h 21m from now.",
     cta: "See Schedule 🗓️",
     to: "/chatbot",
   },
@@ -38,7 +38,7 @@ const CONFIG: Record<
   meditation: {
     emoji: "🙏",
     title: "It's Time!",
-    body: "Time for meditation session. Dr Freud AI said you need to do it today. Please do 25m session.",
+    body: "Time for meditation session. Mindora AI suggests you do a 25m session today.",
     cta: "Let's Meditate →",
     to: "/mindful/exercise",
   },

@@ -29,7 +29,7 @@ const CONFIG: Record<
   },
   maintenance: {
     title: "Under maintenance",
-    message: "Freud.ai is getting a quick tune‑up. Check back soon.",
+    message: "Mindora AI is getting a quick tune‑up. Check back soon.",
     badge: "Maintenance",
     Icon: Construction,
   },

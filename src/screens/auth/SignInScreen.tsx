@@ -1,7 +1,7 @@
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FreudLogo } from "@/components/brand/FreudLogo";
+import { MindoraLogo } from "@/components/brand/MindoraLogo";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { signIn, signInWithGoogle } from "@/services/authService";
@@ -91,7 +91,7 @@ export function SignInScreen() {
           borderBottomRightRadius: "50% 18%",
         }}
       >
-        <FreudLogo size={52} variant="white" className="text-white drop-shadow-sm" />
+        <MindoraLogo size={52} variant="white" className="text-white drop-shadow-sm" />
       </div>
 
       <div className="-mt-2 flex flex-1 flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
@@ -99,7 +99,7 @@ export function SignInScreen() {
           className="mt-4 text-center text-[1.35rem] font-semibold text-[var(--color-primary)]"
           style={{ fontFamily: "var(--font-serif)" }}
         >
-          Sign In To freud.ai
+          Sign In To Mindora AI
         </h1>
 
         <form onSubmit={handleSubmit} className="mt-8 flex flex-1 flex-col gap-4">

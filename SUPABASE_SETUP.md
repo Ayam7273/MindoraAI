@@ -51,7 +51,7 @@ In Supabase dashboard:
   - `mindful_sessions`
   - `chatbot_conversations`
   - `chatbot_messages`
-  - `freud_score_history`
+  - `mindora_score_history`
   - `community_posts`
   - `assessment_responses`
 

@@ -18,7 +18,7 @@ create table public.profiles (
   assessment_complete boolean default false,
   profile_setup_complete boolean default false,
   emergency_contact text,
-  freud_score integer default 0,
+  mindora_score integer default 0,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -95,7 +95,7 @@ create table public.mindful_sessions (
   duration_minutes integer,
   goal text,
   soundscape text,
-  freud_score_gained integer default 0,
+  mindora_score_gained integer default 0,
   stress_reduced integer default 0,
   created_at timestamptz default now()
 );
@@ -125,7 +125,7 @@ create table public.chatbot_messages (
 );
 
 -- Freud score history
-create table public.freud_score_history (
+create table public.mindora_score_history (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   score integer not null,
@@ -153,7 +153,7 @@ create table public.assessment_responses (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   responses jsonb not null,
-  initial_freud_score integer,
+  initial_mindora_score integer,
   completed_at timestamptz default now()
 );
 
@@ -167,7 +167,7 @@ alter table public.sleep_schedules enable row level security;
 alter table public.mindful_sessions enable row level security;
 alter table public.chatbot_conversations enable row level security;
 alter table public.chatbot_messages enable row level security;
-alter table public.freud_score_history enable row level security;
+alter table public.mindora_score_history enable row level security;
 alter table public.community_posts enable row level security;
 alter table public.assessment_responses enable row level security;
 
@@ -187,7 +187,7 @@ create policy "Users own chatbot messages" on public.chatbot_messages
   for all using (
     auth.uid() = (select user_id from public.chatbot_conversations where id = conversation_id)
   );
-create policy "Users own freud score history" on public.freud_score_history for all using (auth.uid() = user_id);
+create policy "Users own mindora score history" on public.mindora_score_history for all using (auth.uid() = user_id);
 create policy "Users own assessment responses" on public.assessment_responses for all using (auth.uid() = user_id);
 
 create policy "Community posts are public" on public.community_posts for select using (true);

@@ -23,7 +23,7 @@ export const useSaveAssessmentResponse = () => {
     mutationFn: async (entry: {
       user_id: string;
       responses: Record<string, unknown>;
-      initial_freud_score?: number | null;
+      initial_mindora_score?: number | null;
     }) => {
       const { data, error } = await supabase.from("assessment_responses").insert(entry).select().single();
       if (error) throw error;

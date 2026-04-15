@@ -68,7 +68,7 @@ export function SearchScreen() {
                 else if (v.length >= 3) setPhase("suggestions");
               }}
               onKeyDown={(e) => e.key === "Enter" && runSearch()}
-              placeholder="Search freud.ai..."
+              placeholder="Search Mindora AI..."
               className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--color-text-muted)]"
             />
             <button type="button" onClick={() => setFilterOpen(true)} className="shrink-0 p-1" aria-label="Filter">

@@ -22,9 +22,7 @@ function latestMoodFromEntries(rows: { mood: string }[] | undefined): MoodKey {
   return "neutral";
 }
 
-/**
- * Mindora score from latest mood/stress/sleep + journal streak (client-side model).
- */
+/** Mindora Score from latest mood/stress/sleep + journal streak (client-side model). */
 export function useMindoraScore(userId: string | undefined) {
   const activeMood = useUiStore((s) => s.activeMood);
   const { data: moods } = useMoodEntries(userId);
@@ -46,3 +44,4 @@ export function useMindoraScore(userId: string | undefined) {
     return { score: computed, computed, mood, stressLevel, sleepHours, journalStreakDays: streak };
   }, [activeMood, moods, stressRows, sleepRows, journals]);
 }
+

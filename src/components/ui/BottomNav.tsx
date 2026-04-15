@@ -66,7 +66,7 @@ export function BottomNav() {
         <div className="w-14 shrink-0" aria-hidden />
 
         <NavLink
-          to="/freud-score"
+          to="/mindora-score"
           className={({ isActive }) => cn(itemClass, isActive ? itemActive : itemInactive)}
         >
           <BarChart2 className="h-6 w-6 shrink-0" strokeWidth={1.75} aria-hidden />

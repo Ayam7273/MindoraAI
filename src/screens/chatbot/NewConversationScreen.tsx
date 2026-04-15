@@ -6,14 +6,14 @@ import { Toggle } from "@/components/ui/Toggle";
 import { cn } from "@/lib/utils";
 
 const AVATARS = ["👨‍⚕️", "👩‍⚕️", "🧑‍🔬", "🤖", "🦉", "🧘"];
-const SOURCES = ["freud.ai", "web", "medic", "journals"];
+const SOURCES = ["mindora.ai", "web", "medic", "journals"];
 const TAGS = ["Mood", "Stress", "Trauma", "Anxiety"] as const;
 
 export function NewConversationScreen() {
   const navigate = useNavigate();
   const [avatar, setAvatar] = useState(0);
   const [name, setName] = useState("");
-  const [sources, setSources] = useState<string[]>(["freud.ai"]);
+  const [sources, setSources] = useState<string[]>(["mindora.ai"]);
   const [journalCtx, setJournalCtx] = useState(true);
   const [tags, setTags] = useState<string[]>(["Mood"]);
   const [isPrivate, setIsPrivate] = useState(false);

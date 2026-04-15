@@ -2,7 +2,7 @@ import { AnimatePresence, motion, type PanInfo } from "framer-motion";
 import { ArrowRight, Brain, BookOpen, Heart, Sparkles, Users } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FreudLogo } from "@/components/brand/FreudLogo";
+import { MindoraLogo } from "@/components/brand/MindoraLogo";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
@@ -88,15 +88,15 @@ export function WelcomeScreen() {
       style={{ fontFamily: "var(--font-sans)" }}
     >
       <div className="flex flex-col items-center pt-2">
-        <FreudLogo size={44} variant="brown" className="text-[var(--color-primary)]" />
+        <MindoraLogo size={44} variant="brown" className="text-[var(--color-primary)]" />
         <h1
           className="mt-5 max-w-[17rem] text-center text-[1.35rem] font-semibold leading-tight text-[var(--color-primary)] sm:max-w-none sm:text-[1.5rem]"
           style={{ fontFamily: "var(--font-serif)" }}
         >
-          Welcome to the ultimate freud UI Kit!
+          Welcome to the ultimate Mindora AI!
         </h1>
         <p className="mt-3 max-w-[18rem] text-center text-[var(--text-sm)] leading-relaxed text-[var(--color-text-secondary)]">
-          Your mindful mental health AI companion for everyone, anywhere 🌿
+          Your mindful mental health AI companion for everyone, anywhere.
         </p>
       </div>
 

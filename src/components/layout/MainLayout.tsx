@@ -6,7 +6,7 @@ import { shouldHideBottomNav } from "@/lib/navPaths";
 import { cn } from "@/lib/utils";
 
 /** Main tab roots: swipe-back disabled (stack root for each tab). */
-const TAB_ROOTS = new Set(["/home", "/community", "/freud-score", "/profile"]);
+const TAB_ROOTS = new Set(["/home", "/community", "/mindora-score", "/profile"]);
 
 export function MainLayout() {
   const navigate = useNavigate();

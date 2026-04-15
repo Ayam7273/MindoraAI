@@ -5,8 +5,8 @@ import { useSwipeable } from "react-swipeable";
 import { Button } from "@/components/ui/Button";
 import { MoodEmoji } from "@/components/ui/MoodEmoji";
 import { useAddMoodEntry } from "@/hooks/useMoodEntries";
-import { useUpdateFreudScore } from "@/hooks/useFreudScoreHistory";
-import { computeFreudScore } from "@/lib/freudScoreModel";
+import { useUpdateMindoraScore } from "@/hooks/useMindoraScoreHistory";
+import { computeMindoraScore } from "@/lib/mindoraScoreModel";
 import { hapticSuccess } from "@/lib/haptics";
 import { useUiStore } from "@/store/uiStore";
 import type { MoodKey } from "@/types";
@@ -34,7 +34,7 @@ export function MoodSetScreen() {
   const userId = useUiStore((s) => s.user?.id);
   const setActiveMood = useUiStore((s) => s.setActiveMood);
   const addMood = useAddMoodEntry();
-  const updateFreud = useUpdateFreudScore();
+  const updateMindora = useUpdateMindoraScore();
   const [index, setIndex] = useState(2);
   const mood = ORDER[index];
 
@@ -101,13 +101,13 @@ export function MoodSetScreen() {
             }
             setActiveMood(mood);
             await addMood.mutateAsync({ user_id: userId, mood });
-            const score = computeFreudScore({
+            const score = computeMindoraScore({
               mood,
               sleepHours: 7,
               stressLevel: 2,
               journalStreakDays: 0,
             });
-            await updateFreud.mutateAsync({ userId, score, reason: "Mood check-in" });
+            await updateMindora.mutateAsync({ userId, score, reason: "Mood check-in" });
             hapticSuccess();
             navigate("/mood", { replace: true });
           }}

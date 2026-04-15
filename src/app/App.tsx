@@ -27,8 +27,8 @@ import { MaintenanceScreen } from "@/screens/errors/MaintenanceScreen";
 import { NoInternetScreen } from "@/screens/errors/NoInternetScreen";
 import { NotAllowedScreen } from "@/screens/errors/NotAllowedScreen";
 import { NotFoundScreen } from "@/screens/errors/NotFoundScreen";
-import { FreudScoreAISuggestionsScreen } from "@/screens/home/FreudScoreAISuggestionsScreen";
-import { FreudScoreScreen } from "@/screens/home/FreudScoreScreen";
+import { MindoraScoreAISuggestionsScreen } from "@/screens/home/MindoraScoreAISuggestionsScreen";
+import { MindoraScoreScreen } from "@/screens/home/MindoraScoreScreen";
 import { HomeScreen } from "@/screens/home/HomeScreen";
 import { JournalDetailScreen } from "@/screens/journal/JournalDetailScreen";
 import { JournalListScreen } from "@/screens/journal/JournalListScreen";
@@ -91,8 +91,8 @@ export default function App() {
             <Route path="/profile-setup" element={<ProfileSetupScreen />} />
             <Route element={<MainLayout />}>
             <Route path="/home" element={<HomeScreen />} />
-            <Route path="/freud-score" element={<FreudScoreScreen />} />
-            <Route path="/freud-score/suggestions" element={<FreudScoreAISuggestionsScreen />} />
+            <Route path="/mindora-score" element={<MindoraScoreScreen />} />
+            <Route path="/mindora-score/suggestions" element={<MindoraScoreAISuggestionsScreen />} />
             <Route path="/mood" element={<MoodTrackerScreen />} />
             <Route path="/mood/set" element={<MoodSetScreen />} />
             <Route path="/mood/history" element={<MoodHistoryScreen />} />

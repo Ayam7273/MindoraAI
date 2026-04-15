@@ -4,10 +4,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const FAQ = [
-  { q: "What is freud.ai?", a: "A mental wellness companion for journaling, sleep, mood, and guided support (demo UI)." },
-  { q: "How does Freud AI work?", a: "It combines structured trackers with conversational guidance — always verify urgent matters with a professional." },
-  { q: "How do I access Freud AI?", a: "Sign in, complete onboarding, then open Chatbot from Home or the quick action button." },
-  { q: "Is Freud AI free?", a: "This build is a front-end demo; a real product would spell out plans clearly." },
+  { q: "What is Mindora AI?", a: "A mental wellness companion for journaling, sleep, mood, and guided support (demo UI)." },
+  { q: "How does Mindora AI work?", a: "It combines structured trackers with conversational guidance — always verify urgent matters with a professional." },
+  { q: "How do I access Mindora AI?", a: "Sign in, complete onboarding, then open Chatbot from Home or the quick action button." },
+  { q: "Is Mindora AI free?", a: "This build is a front-end demo; a real product would spell out plans clearly." },
   { q: "Is my data secure?", a: "Treat this as a prototype. Production apps need encryption, policies, and compliance review." },
 ];
 
@@ -28,7 +28,7 @@ export function HelpCenterScreen() {
         <div className="text-5xl" aria-hidden>
           ✿
         </div>
-        <p className="mt-2 text-sm font-semibold text-[#3B2A1A]">Freud AI</p>
+        <p className="mt-2 text-sm font-semibold text-[#3B2A1A]">Mindora AI</p>
         <p className="text-xs text-[var(--color-text-secondary)]">Supportive tools for everyday mental wellness.</p>
       </div>
 

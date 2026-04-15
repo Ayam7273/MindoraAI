@@ -21,9 +21,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { useSaveAssessmentResponse } from "@/hooks/useAssessmentResponses";
 import { useUpdateProfile } from "@/hooks/useProfile";
-import { useUpdateFreudScore } from "@/hooks/useFreudScoreHistory";
+import { useUpdateMindoraScore } from "@/hooks/useMindoraScoreHistory";
 import { useAddStressEntry } from "@/hooks/useStressEntries";
-import { computeFreudScore } from "@/lib/freudScoreModel";
+import { computeMindoraScore } from "@/lib/mindoraScoreModel";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/store/uiStore";
 import type { MoodKey } from "@/types";
@@ -59,7 +59,7 @@ export function MentalHealthAssessmentScreen() {
   const saveAssessment = useSaveAssessmentResponse();
   const updateProfile = useUpdateProfile();
   const addStress = useAddStressEntry();
-  const updateFreud = useUpdateFreudScore();
+  const updateMindora = useUpdateMindoraScore();
   const [step, setStep] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -233,7 +233,7 @@ export function MentalHealthAssessmentScreen() {
       return;
     }
     const moodKey = moodSliderToKey(mood);
-    const computed = computeFreudScore({
+    const computed = computeMindoraScore({
       mood: moodKey,
       sleepHours: 7,
       stressLevel: stress,
@@ -258,10 +258,10 @@ export function MentalHealthAssessmentScreen() {
           stress,
           voiceTranscript,
         },
-        initial_freud_score: computed,
+        initial_mindora_score: computed,
       });
       await addStress.mutateAsync({ user_id: userId, stress_level: stress });
-      await updateFreud.mutateAsync({
+      await updateMindora.mutateAsync({
         userId,
         score: computed,
         reason: "Initial assessment",

@@ -10,6 +10,16 @@ interface StatusBarProps {
  * Simulated iOS-style status row (time, signal, battery) for a native app feel.
  */
 export function StatusBar({ className, time = "9:41" }: StatusBarProps) {
+  void className;
+  void time;
+  return null;
+}
+
+/*
+ * Legacy UI: kept for backward compatibility with existing screens.
+ * If you ever want it back, revert this component to the previous implementation.
+ */
+/*
   return (
     <div
       className={cn("bg-[var(--color-bg)] text-[var(--color-text-primary)]", className)}
@@ -70,3 +80,4 @@ function BatteryIcon() {
     </svg>
   );
 }
+*/

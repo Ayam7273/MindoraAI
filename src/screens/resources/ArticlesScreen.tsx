@@ -5,7 +5,7 @@ const CATS = ["Stress", "Anxiety", "Health", "Status", "Sleep", "Mood"];
 
 const LIST = [
   { id: "1", title: "Will meditation help you escape the rat race?", author: "Johann Liebert", views: "3.2k" },
-  { id: "2", title: "Breathing patterns for anxious mornings", author: "Dr. Freud AI", views: "1.1k" },
+  { id: "2", title: "Breathing patterns for anxious mornings", author: "Mindora AI", views: "1.1k" },
 ];
 
 export function ArticlesScreen() {

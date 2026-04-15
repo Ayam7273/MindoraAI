@@ -18,7 +18,7 @@ export interface Profile {
   assessment_complete: boolean | null;
   profile_setup_complete: boolean | null;
   emergency_contact: string | null;
-  freud_score: number | null;
+  mindora_score: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -89,7 +89,7 @@ export interface MindfulSessionRow {
   duration_minutes: number | null;
   goal: string | null;
   soundscape: string | null;
-  freud_score_gained: number | null;
+  mindora_score_gained: number | null;
   stress_reduced: number | null;
   created_at: string;
 }
@@ -116,7 +116,7 @@ export interface ChatbotMessageRow {
   created_at: string;
 }
 
-export interface FreudScoreHistoryRow {
+export interface MindoraScoreHistoryRow {
   id: string;
   user_id: string;
   score: number;
@@ -142,6 +142,6 @@ export interface AssessmentResponseRow {
   id: string;
   user_id: string;
   responses: Record<string, unknown>;
-  initial_freud_score: number | null;
+  initial_mindora_score: number | null;
   completed_at: string;
 }

@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { useAddSleepEntry } from "@/hooks/useSleepEntries";
-import { useUpdateFreudScore } from "@/hooks/useFreudScoreHistory";
-import { computeFreudScore } from "@/lib/freudScoreModel";
+import { useUpdateMindoraScore } from "@/hooks/useMindoraScoreHistory";
+import { computeMindoraScore } from "@/lib/mindoraScoreModel";
 import { useUiStore } from "@/store/uiStore";
 
 export function SleepResultsScreen() {
@@ -11,7 +11,7 @@ export function SleepResultsScreen() {
   const userId = useUiStore((s) => s.user?.id);
   const activeMood = useUiStore((s) => s.activeMood);
   const addSleep = useAddSleepEntry();
-  const updateFreud = useUpdateFreudScore();
+  const updateMindora = useUpdateMindoraScore();
   const [busy, setBusy] = useState(false);
 
   const onDone = async () => {
@@ -31,13 +31,13 @@ export function SleepResultsScreen() {
       ai_suggestions: [],
     });
     const mood = activeMood ?? "neutral";
-    const score = computeFreudScore({
+    const score = computeMindoraScore({
       mood,
       sleepHours: 8.25,
       stressLevel: 2,
       journalStreakDays: 0,
     });
-    await updateFreud.mutateAsync({ userId, score, reason: "Sleep log" });
+    await updateMindora.mutateAsync({ userId, score, reason: "Sleep log" });
     setBusy(false);
     navigate("/sleep");
   };

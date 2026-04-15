@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useAddStressEntry } from "@/hooks/useStressEntries";
-import { useUpdateFreudScore } from "@/hooks/useFreudScoreHistory";
-import { computeFreudScore } from "@/lib/freudScoreModel";
+import { useUpdateMindoraScore } from "@/hooks/useMindoraScoreHistory";
+import { computeMindoraScore } from "@/lib/mindoraScoreModel";
 import { hapticSuccess } from "@/lib/haptics";
 import { useUiStore } from "@/store/uiStore";
 const BUBBLES = [
@@ -22,7 +22,7 @@ export function StressLogScreen() {
   const userId = useUiStore((s) => s.user?.id);
   const activeMood = useUiStore((s) => s.activeMood);
   const addStress = useAddStressEntry();
-  const updateFreud = useUpdateFreudScore();
+  const updateMindora = useUpdateMindoraScore();
   const [step, setStep] = useState(0);
   const [level, setLevel] = useState(3);
   const [selected, setSelected] = useState<string[]>(["Loneliness"]);
@@ -40,13 +40,13 @@ export function StressLogScreen() {
       life_impact: "Very High",
     });
     const mood = activeMood ?? "neutral";
-    const score = computeFreudScore({
+    const score = computeMindoraScore({
       mood,
       sleepHours: 7,
       stressLevel: level,
       journalStreakDays: 0,
     });
-    await updateFreud.mutateAsync({ userId, score, reason: "Stress log" });
+    await updateMindora.mutateAsync({ userId, score, reason: "Stress log" });
     hapticSuccess();
     setConfirm(true);
   };
@@ -58,7 +58,7 @@ export function StressLogScreen() {
           <div className="text-4xl">🧘</div>
           <h2 className="mt-4 text-lg font-bold text-[var(--color-primary)]">Stress Level Set to {level}</h2>
           <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-            Logged to your journal and shared with Doctor Freud AI (demo).
+            Logged to your journal and shared with Mindora AI (demo).
           </p>
           <Button type="button" fullWidth className="mt-6 rounded-full" onClick={() => navigate("/stress")}>
             Got it, thanks! ✓

@@ -7,7 +7,7 @@ const TODAY = [
   { icon: "@", color: "bg-purple-500", title: "You were mentioned", sub: "in a thread about sleep" },
 ];
 
-const LAST = [{ icon: "🎬", color: "bg-[#8B7355]", title: "New video from Freud.ai", sub: "Mindfulness 101 — intro" }];
+const LAST = [{ icon: "🎬", color: "bg-[#8B7355]", title: "New video from Mindora AI", sub: "Mindfulness 101 — intro" }];
 
 export function CommunityNotificationsScreen() {
   const navigate = useNavigate();

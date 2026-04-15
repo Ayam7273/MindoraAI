@@ -25,7 +25,7 @@ export function AIChatbotScreen() {
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg font-bold">Mindful AI Chatbot</h1>
-            <p className="mt-1 text-xs text-white/70">Talk with Dr. Freud AI — supportive, not a substitute for care.</p>
+            <p className="mt-1 text-xs text-white/70">Talk with Mindora AI — supportive, not a substitute for care.</p>
           </div>
         </div>
         <div className="mt-6 rounded-2xl bg-white/10 p-4">

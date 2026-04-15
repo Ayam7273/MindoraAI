@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { MoodEmoji } from "@/components/ui/MoodEmoji";
 import { StatusBar } from "@/components/ui/StatusBar";
-import { useFreudScore } from "@/hooks/useFreudScore";
+import { useMindoraScore } from "@/hooks/useMindoraScore";
 import { useUiStore } from "@/store/uiStore";
 import type { MoodKey } from "@/types";
 
@@ -30,7 +30,7 @@ const LABEL: Record<MoodKey, string> = {
 export function MoodTrackerScreen() {
   const navigate = useNavigate();
   const userId = useUiStore((s) => s.user?.id);
-  const { mood: currentMood } = useFreudScore(userId);
+  const { mood: currentMood } = useMindoraScore(userId);
 
   return (
     <div className="min-h-dvh" style={{ background: BG[currentMood] }}>

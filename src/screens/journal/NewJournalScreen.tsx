@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/Input";
 import { MoodEmoji } from "@/components/ui/MoodEmoji";
 import { TopBar } from "@/components/ui/TopBar";
 import { useAddJournal } from "@/hooks/useJournalEntries";
-import { useUpdateFreudScore } from "@/hooks/useFreudScoreHistory";
+import { useUpdateMindoraScore } from "@/hooks/useMindoraScoreHistory";
 import { detectCrisisLanguage } from "@/lib/crisisDetection";
-import { computeFreudScore } from "@/lib/freudScoreModel";
+import { computeMindoraScore } from "@/lib/mindoraScoreModel";
 import { hapticSuccess } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/store/uiStore";
@@ -23,7 +23,7 @@ export function NewJournalScreen() {
   const userId = useUiStore((s) => s.user?.id);
   const setCrisisMode = useUiStore((s) => s.setCrisisMode);
   const addJournal = useAddJournal();
-  const updateFreud = useUpdateFreudScore();
+  const updateMindora = useUpdateMindoraScore();
   const [mode, setMode] = useState<"pick" | "voice" | "text">("pick");
   const [recording, setRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
@@ -55,13 +55,13 @@ export function NewJournalScreen() {
       stressors: chips,
       has_crisis_language: false,
     });
-    const score = computeFreudScore({
+    const score = computeMindoraScore({
       mood: emotion,
       sleepHours: 7,
       stressLevel: stressLevel,
       journalStreakDays: 12,
     });
-    await updateFreud.mutateAsync({ userId, score, reason: "Journal entry" });
+    await updateMindora.mutateAsync({ userId, score, reason: "Journal entry" });
     hapticSuccess();
     navigate(`/journal/${row.id}`);
   };

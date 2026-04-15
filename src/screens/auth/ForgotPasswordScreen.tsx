@@ -1,7 +1,7 @@
 import { Mail } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FreudLogo } from "@/components/brand/FreudLogo";
+import { MindoraLogo } from "@/components/brand/MindoraLogo";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { resetPassword } from "@/services/authService";
@@ -36,7 +36,7 @@ export function ForgotPasswordScreen() {
       style={{ fontFamily: "var(--font-sans)" }}
     >
       <div className="flex flex-col items-center">
-        <FreudLogo size={52} variant="brown" className="text-[var(--color-primary)]" />
+        <MindoraLogo size={52} variant="brown" className="text-[var(--color-primary)]" />
         <h1 className="mt-6 text-center text-xl font-semibold text-[var(--color-primary)]">Reset password</h1>
         <p className="mt-2 max-w-sm text-center text-[var(--text-sm)] text-[var(--color-text-secondary)]">
           Enter your account email and we&apos;ll send you a link to choose a new password.

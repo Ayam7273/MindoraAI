@@ -7,7 +7,7 @@
 
 @media (min-width: 431px) {
   body::before {
-    content: "Freud.ai is only available on mobile devices.";
+    content: "Mindora AI is only available on mobile devices.";
     display: flex;
     align-items: center;
     justify-content: center;

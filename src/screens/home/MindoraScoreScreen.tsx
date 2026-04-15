@@ -2,11 +2,11 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, SlidersHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
-import { FreudScoreBadge } from "@/components/ui/FreudScoreBadge";
+import { MindoraScoreBadge } from "@/components/ui/MindoraScoreBadge";
 import { MoodEmoji } from "@/components/ui/MoodEmoji";
 import { Sheet } from "@/components/ui/Sheet";
 import { Toggle } from "@/components/ui/Toggle";
-import { useFreudScore } from "@/hooks/useFreudScore";
+import { useMindoraScore } from "@/hooks/useMindoraScore";
 import { useUiStore } from "@/store/uiStore";
 import type { MoodKey } from "@/types";
 
@@ -28,10 +28,10 @@ const BAR_WEEKS = [
 
 const MOOD_ROW: MoodKey[] = ["depressed", "sad", "neutral", "happy", "overjoyed", "happy", "neutral"];
 
-export function FreudScoreScreen() {
+export function MindoraScoreScreen() {
   const navigate = useNavigate();
   const userId = useUiStore((s) => s.user?.id);
-  const { score } = useFreudScore(userId);
+  const { score } = useMindoraScore(userId);
   const [filterOpen, setFilterOpen] = useState(false);
   const [from, setFrom] = useState("2025-09-01");
   const [to, setTo] = useState("2025-09-30");
@@ -91,7 +91,7 @@ export function FreudScoreScreen() {
                   <p className="text-xs font-semibold text-[var(--color-text-muted)]">{row.date}</p>
                   <p className="text-sm text-[var(--color-text-primary)]">{row.label}</p>
                 </div>
-                <FreudScoreBadge score={row.score} size={48} stroke={4} />
+                <MindoraScoreBadge score={row.score} size={48} stroke={4} />
               </li>
             ))}
           </ul>
@@ -133,13 +133,13 @@ export function FreudScoreScreen() {
           type="button"
           fullWidth
           className="rounded-full"
-          onClick={() => navigate("/freud-score/suggestions")}
+          onClick={() => navigate("/mindora-score/suggestions")}
         >
           Swipe for AI suggestions ⌄⌄
         </Button>
       </div>
 
-      <Sheet open={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Freud Score">
+      <Sheet open={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Mindora Score">
         <div className="space-y-4">
           <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
             From
@@ -176,10 +176,11 @@ export function FreudScoreScreen() {
             onChange={(e) => setIncludeAi(e.target.checked)}
           />
           <Button type="button" fullWidth className="rounded-full" onClick={() => setFilterOpen(false)}>
-            Filter Freud Score (15)
+            Filter Mindora Score (15)
           </Button>
         </div>
       </Sheet>
     </div>
   );
 }
+

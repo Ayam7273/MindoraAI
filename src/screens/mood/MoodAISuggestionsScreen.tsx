@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/ui/TopBar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { useFreudScore } from "@/hooks/useFreudScore";
-import { useUpdateFreudScore } from "@/hooks/useFreudScoreHistory";
+import { useMindoraScore } from "@/hooks/useMindoraScore";
+import { useUpdateMindoraScore } from "@/hooks/useMindoraScoreHistory";
 import { useUiStore } from "@/store/uiStore";
 
 const STEPS = [
@@ -31,8 +31,8 @@ const STEPS = [
 export function MoodAISuggestionsScreen() {
   const navigate = useNavigate();
   const userId = useUiStore((s) => s.user?.id);
-  const { score } = useFreudScore(userId);
-  const updateFreud = useUpdateFreudScore();
+  const { score } = useMindoraScore(userId);
+  const updateMindora = useUpdateMindoraScore();
   const [done, setDone] = useState(false);
   const nextScore = Math.min(100, score + 3);
 
@@ -41,13 +41,13 @@ export function MoodAISuggestionsScreen() {
       <div className="flex min-h-dvh flex-col items-center justify-center bg-[#2a1f14] px-6 text-center text-white">
         <div className="text-6xl">🎉</div>
         <h1 className="mt-6 text-xl font-bold">Mood Suggestion Resolved!</h1>
-        <p className="mt-3 text-sm text-white/75">+3 Freud Score received.</p>
+        <p className="mt-3 text-sm text-white/75">+3 Mindora Score received.</p>
         <p className="mt-1 text-sm text-white/75">Your score is now about {nextScore}.</p>
         <Button
           type="button"
           className="mt-10 w-full max-w-xs rounded-full bg-white text-[#3B2A1A]"
           onClick={() => {
-            if (userId) void updateFreud.mutateAsync({ userId, score: nextScore, reason: "Mood suggestion" });
+            if (userId) void updateMindora.mutateAsync({ userId, score: nextScore, reason: "Mood suggestion" });
             navigate("/mood", { replace: true });
           }}
         >

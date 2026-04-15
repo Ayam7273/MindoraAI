@@ -12,7 +12,7 @@ import { useUiStore } from "@/store/uiStore";
 type Msg = { id: string; role: "user" | "ai"; text: string; limited?: boolean };
 
 const SEED: Msg[] = [
-  { id: "1", role: "ai", text: "Hello, I'm Freud AI. How can I help you today?" },
+  { id: "1", role: "ai", text: "Hello, I'm Mindora AI. How can I help you today?" },
 ];
 
 export function ChatConversationScreen() {

@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export interface FreudScoreBadgeProps {
+export interface MindoraScoreBadgeProps {
   /** 0–100 inclusive */
   score: number;
   size?: number;
@@ -15,12 +15,12 @@ function tierColor(score: number): string {
 }
 
 /** Circular score with progress ring; color reflects band (red / orange / green). */
-export function FreudScoreBadge({
+export function MindoraScoreBadge({
   score,
   size = 72,
   stroke = 6,
   className,
-}: FreudScoreBadgeProps) {
+}: MindoraScoreBadgeProps) {
   const clamped = Math.min(100, Math.max(0, Math.round(score)));
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -63,3 +63,4 @@ export function FreudScoreBadge({
     </div>
   );
 }
+
