@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { Brain, ChevronDown, ChevronLeft, ChevronUp, Wind } from "lucide-react";
+import { Brain, ChevronDown, ChevronLeft, ChevronUp, Heart, Leaf, Wind } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +21,7 @@ interface Category {
 const CATEGORIES: Category[] = [
   {
     id: "grounding",
-    icon: <span className="text-2xl">🌱</span>,
+    icon: <Leaf className="h-6 w-6 text-[var(--color-accent-green)]" strokeWidth={1.75} />,
     title: "Grounding Techniques",
     color: "bg-[var(--color-accent-green-light)]",
     techniques: [
@@ -99,7 +99,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: "selfcompassion",
-    icon: <span className="text-2xl">💛</span>,
+    icon: <Heart className="h-6 w-6 text-[var(--color-accent-orange)]" strokeWidth={1.75} />,
     title: "Self-Compassion",
     color: "bg-[var(--color-accent-orange-light)]",
     techniques: [

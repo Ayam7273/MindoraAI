@@ -97,7 +97,7 @@ export function PersonalInfoScreen() {
         </button>
       </div>
 
-      <Toggle label="Show avatar on posts (demo)" checked onChange={() => {}} />
+      <Toggle label="Show avatar on posts " checked onChange={() => {}} />
 
       <Button
         type="button"

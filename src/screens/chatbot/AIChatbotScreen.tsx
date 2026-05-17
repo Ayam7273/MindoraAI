@@ -1,21 +1,23 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Bot, ChevronRight, MessageSquarePlus, Mic } from "lucide-react";
+import { Bot, ChevronRight, MessageCircle, MessageSquarePlus, Mic } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { useChatStorage } from "@/lib/chatStorage";
+import { useChatbotConversations } from "@/hooks/useChatbotConversations";
+import { useUiStore } from "@/store/uiStore";
 
 export function AIChatbotScreen() {
   const navigate = useNavigate();
-  const { conversations } = useChatStorage();
+  const userId = useUiStore((s) => s.user?.id);
+  const { data: conversations = [] } = useChatbotConversations(userId);
 
   const sorted = [...conversations].sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
   );
 
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-28 lg:flex lg:gap-0 lg:pb-0">
       {/* Left panel: header + conversation list */}
       <aside className="lg:w-[300px] lg:shrink-0 lg:border-r lg:border-[var(--color-border)] lg:min-h-dvh lg:flex lg:flex-col">
-        <header className="rounded-b-3xl bg-[#3B2A1A] px-4 pb-8 pt-[max(0.5rem,env(safe-area-inset-top))] text-[#FAF8F4] lg:rounded-none lg:rounded-b-none lg:flex-shrink-0">
+        <header className="rounded-b-3xl bg-[#3B2A1A] px-3 sm:px-4 pb-8 pt-[max(0.5rem,env(safe-area-inset-top))] text-white lg:rounded-none lg:flex-shrink-0">
           <div className="flex items-start gap-3">
             <div aria-hidden>
               <Bot className="h-12 w-12" strokeWidth={1.75} />
@@ -35,7 +37,7 @@ export function AIChatbotScreen() {
             >
               <span className="inline-flex items-center gap-2">
                 <MessageSquarePlus className="h-4 w-4" />
-                New Conversation +
+                New Conversation
               </span>
             </Button>
             <Button
@@ -57,11 +59,11 @@ export function AIChatbotScreen() {
           </button>
         </header>
 
-        <section className="px-4 pt-5 lg:flex-1 lg:overflow-y-auto">
+        <section className="px-3 sm:px-4 pt-5 lg:flex-1 lg:overflow-y-auto">
           <h2 className="mb-2 text-sm font-bold text-[#3B2A1A]">Recent Conversations</h2>
           {sorted.length === 0 ? (
             <div className="flex flex-col items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-white px-4 py-10 text-center">
-              <span className="text-4xl">💬</span>
+              <MessageCircle className="h-10 w-10 text-[var(--color-border)]" strokeWidth={1.25} />
               <p className="font-semibold text-[var(--color-primary)]">No conversations yet</p>
               <p className="text-xs text-[var(--color-text-muted)]">
                 Start a new conversation with Mindora AI.
@@ -80,19 +82,19 @@ export function AIChatbotScreen() {
                 <li key={c.id}>
                   <Link
                     to={`/chatbot/${c.id}`}
-                    className="flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-sm"
+                    className="flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-sm transition-colors hover:bg-[var(--color-bg-secondary)]"
                   >
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-bg-secondary)]">
-                      <Bot className="h-5 w-5" strokeWidth={1.75} />
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-secondary)]">
+                      <Bot className="h-5 w-5 text-[var(--color-text-secondary)]" strokeWidth={1.75} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-[#3B2A1A]">{c.title}</p>
-                      <p className="truncate text-xs text-[var(--color-text-muted)]">
-                        {c.messages[c.messages.length - 1]?.text.slice(0, 60) ?? ""}
+                      <p className="truncate font-semibold text-[#3B2A1A]">{c.name}</p>
+                      <p className="text-[10px] text-[var(--color-text-muted)]">
+                        {c.tags?.join(", ") || "General"}
                       </p>
                     </div>
                     <span className="shrink-0 text-[10px] text-[var(--color-text-muted)]">
-                      {formatRelative(c.updatedAt)}
+                      {formatRelative(c.updated_at)}
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-[var(--color-text-muted)]" />
                   </Link>
@@ -103,7 +105,7 @@ export function AIChatbotScreen() {
         </section>
       </aside>
 
-      {/* Right panel: chat area placeholder (desktop only) */}
+      {/* Right panel: placeholder (desktop only) */}
       <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:items-center lg:justify-center lg:bg-[#FAF8F4]">
         <Bot className="h-16 w-16 text-[var(--color-text-muted)]" strokeWidth={1.25} />
         <p className="mt-4 text-base font-semibold text-[var(--color-primary)]">Select a conversation</p>

@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { ChevronDown, ChevronLeft } from "lucide-react";
+﻿import { useState } from "react";
+import { ChevronDown, ChevronLeft, MessageCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const FAQ = [
-  { q: "What is Mindora AI?", a: "A mental wellness companion for journaling, sleep, mood, and guided support (demo UI)." },
+  { q: "What is Mindora AI?", a: "A mental wellness companion for journaling, sleep, mood, and guided support ." },
   { q: "How does Mindora AI work?", a: "It combines structured trackers with conversational guidance — always verify urgent matters with a professional." },
   { q: "How do I access Mindora AI?", a: "Sign in, complete onboarding, then open Chatbot from Home or the quick action button." },
-  { q: "Is Mindora AI free?", a: "This build is a front-end demo; a real product would spell out plans clearly." },
+  { q: "Is Mindora AI free?", a: "Mindora AI offers both free and premium tiers. Visit our website for current pricing details." },
   { q: "Is my data secure?", a: "Treat this as a prototype. Production apps need encryption, policies, and compliance review." },
 ];
 
@@ -36,7 +36,7 @@ export function HelpCenterScreen() {
         {["Our Office Address", "Our Email Address", "Our Phone Number"].map((t) => (
           <div key={t} className="rounded-2xl bg-white p-4 text-sm font-semibold text-[#3B2A1A] shadow-sm ring-1 ring-[var(--color-border)]">
             {t}
-            <p className="mt-1 text-xs font-normal text-[var(--color-text-muted)]">Demo placeholder content.</p>
+            <p className="mt-1 text-xs font-normal text-[var(--color-text-muted)]"></p>
           </div>
         ))}
       </div>
@@ -65,7 +65,7 @@ export function HelpCenterScreen() {
             "mt-6 flex w-full items-center justify-center rounded-full bg-[#3B2A1A] py-3 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2a1d12]",
           )}
         >
-          Live Chat 💬
+          <span className="inline-flex items-center gap-2"><MessageCircle className="h-4 w-4" />Live Chat</span>
         </Link>
       </div>
     </div>

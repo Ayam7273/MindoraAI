@@ -82,16 +82,16 @@ export function MindoraScoreScreen() {
 
   const trendLabel =
     trend === "up"
-      ? "📈 You've been feeling better recently"
+      ? "You've been feeling better recently"
       : trend === "down"
-        ? "📉 You've had some tough days lately"
+        ? "You've had some tough days lately"
         : trend === "stable"
-          ? "➡️ Your mood has been steady"
+          ? "Your mood has been steady"
           : null;
 
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-28">
-      <header className="relative overflow-hidden bg-[#d8e8cc] px-4 pb-8 pt-[max(0.5rem,env(safe-area-inset-top))]">
+      <header className="relative overflow-hidden bg-[#d8e8cc] px-3 sm:px-4 pb-8 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <div
           className="pointer-events-none absolute inset-0 opacity-40"
           style={{
@@ -116,9 +116,9 @@ export function MindoraScoreScreen() {
         </div>
       </header>
 
-      <div className="-mt-4 space-y-4 rounded-t-[var(--radius-xl)] bg-[#FAF8F4] px-4 pb-6 pt-5">
+      <div className="-mt-4 space-y-4 rounded-t-[var(--radius-xl)] bg-[#FAF8F4] px-3 sm:px-4 pb-6 pt-5">
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <StatCard
             icon={<Flame className="h-5 w-5 text-orange-500" />}
             value={`${moodStreak}d`}
@@ -148,8 +148,8 @@ export function MindoraScoreScreen() {
           <h2 className="mb-2 text-sm font-bold text-[var(--color-primary)]">
             Mood Calendar (28 days)
           </h2>
-          <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-sm)]">
-            <div className="grid grid-cols-7 gap-1">
+          <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-2 sm:p-3 shadow-[var(--shadow-sm)]">
+            <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
               {heatmap.map(({ date, mood }, i) => (
                 <div
                   key={i}
@@ -232,10 +232,10 @@ function StatCard({
   label: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-1 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-center shadow-[var(--shadow-sm)]">
+    <div className="flex flex-col items-center gap-1 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-2 sm:p-3 text-center shadow-[var(--shadow-sm)] overflow-hidden">
       {icon}
-      <p className="text-lg font-bold text-[var(--color-primary)]">{value}</p>
-      <p className="text-[10px] text-[var(--color-text-muted)]">{label}</p>
+      <p className="text-base sm:text-lg font-bold text-[var(--color-primary)] tabular-nums">{value}</p>
+      <p className="text-[9px] sm:text-[10px] text-[var(--color-text-muted)] leading-tight">{label}</p>
     </div>
   );
 }

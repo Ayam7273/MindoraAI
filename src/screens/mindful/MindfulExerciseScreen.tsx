@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { TopBar } from "@/components/ui/TopBar";
@@ -59,7 +59,7 @@ export function MindfulExerciseScreen() {
           >
             {String(Math.floor(minutes / 60)).padStart(2, "0")}:{String(minutes % 60).padStart(2, "0")}
           </button>
-          <p className="mt-4 text-xs text-[var(--color-text-muted)]">Tap timer to add 5 minutes (demo)</p>
+          <p className="mt-4 text-xs text-[var(--color-text-muted)]">Tap timer to add 5 minutes </p>
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             {SOUNDS.map((s) => (
               <button

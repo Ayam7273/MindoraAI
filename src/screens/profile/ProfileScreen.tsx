@@ -1,4 +1,4 @@
-import { ChevronRight, LogOut, Trash2 } from "lucide-react";
+import { ChevronRight, LogOut, Trash2, User } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
@@ -11,12 +11,12 @@ function Row({ to, label, danger }: { to: string; label: string; danger?: boolea
   return (
     <Link
       to={to}
-      className="flex items-center justify-between rounded-xl bg-white px-4 py-3 ring-1 ring-[var(--color-border)]"
+      className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 sm:px-4 py-3 ring-1 ring-[var(--color-border)] overflow-hidden"
     >
-      <span className={`text-sm font-medium ${danger ? "text-red-600" : "text-[#3B2A1A]"}`}>
+      <span className={`min-w-0 truncate text-sm font-medium ${danger ? "text-red-600" : "text-[#3B2A1A]"}`}>
         {label}
       </span>
-      <ChevronRight className="h-4 w-4 text-[var(--color-text-muted)]" />
+      <ChevronRight className="h-4 w-4 shrink-0 text-[var(--color-text-muted)]" />
     </Link>
   );
 }
@@ -34,19 +34,19 @@ export function ProfileScreen() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#FAF8F4] px-4 pb-28 pt-4 lg:px-8 lg:pt-6">
+    <div className="min-h-dvh bg-[#FAF8F4] px-3 sm:px-4 pb-28 pt-4 lg:px-8 lg:pt-6">
       <div className="lg:max-w-3xl lg:mx-auto">
-      <div className="flex items-center gap-4 rounded-2xl bg-white p-4 ring-1 ring-[var(--color-border)]">
-        <div className="h-16 w-16 rounded-full bg-[var(--color-bg-secondary)] text-center text-2xl leading-[4rem]">
-          👤
+      <div className="flex items-center gap-3 rounded-2xl bg-white p-3 sm:p-4 ring-1 ring-[var(--color-border)] overflow-hidden">
+        <div className="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-secondary)]">
+          <User className="h-7 w-7 text-[var(--color-text-muted)]" strokeWidth={1.5} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-bold text-[#3B2A1A]">{displayName}</p>
+          <p className="truncate text-base sm:text-lg font-bold text-[#3B2A1A]">{displayName}</p>
           <p className="text-xs text-[var(--color-text-muted)]">Mindora member</p>
         </div>
         <ProgressRing
           value={score / 100}
-          size={56}
+          size={52}
           stroke={5}
           progressColor="var(--color-accent-green)"
         />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { ChevronLeft, Pause, SkipForward } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
@@ -47,7 +47,7 @@ export function CoursePlayerScreen() {
         <div className="rounded-2xl bg-white/95 p-3 text-[#3B2A1A] shadow-lg">
           <p className="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Next up</p>
           <p className="text-sm font-bold">First Session Meditation</p>
-          <p className="text-xs text-[var(--color-text-muted)]">15 min · ⭐ 4.5</p>
+          <p className="text-xs text-[var(--color-text-muted)]">15 min ·  4.5</p>
         </div>
         <Button type="button" className="mt-4 w-full rounded-full bg-[#3B2A1A]" onClick={() => navigate(`/resources/complete/${courseId ?? "1"}`)}>
           Mark lesson complete

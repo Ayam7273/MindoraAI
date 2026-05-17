@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { ChevronLeft, Send } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -21,7 +21,7 @@ export function DMScreen() {
         </button>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-[#3B2A1A]">{userId === "alfonso" ? "Alfonso Merton" : "Community member"}</p>
-          <p className="text-[10px] text-[var(--color-text-muted)]">Active now (demo)</p>
+          <p className="text-[10px] text-[var(--color-text-muted)]">Active now </p>
         </div>
         <button type="button" className="text-xs">
           🔍

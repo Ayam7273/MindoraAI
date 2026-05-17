@@ -29,13 +29,13 @@ export function NewPostScreen() {
 
   if (step === 1) {
     return (
-      <div className="min-h-dvh bg-[#FAF8F4] px-4 pb-28 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <div className="min-h-dvh bg-[#FAF8F4] px-3 sm:px-4 pb-28 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <header className="mb-4 flex items-center gap-2">
-          <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white ring-1 ring-[var(--color-border)]">
+          <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-[var(--color-border)]">
             <ChevronLeft className="h-6 w-6 text-[#3B2A1A]" />
           </button>
-          <h1 className="flex-1 text-center text-lg font-bold text-[#3B2A1A]">Add New Post</h1>
-          <button type="button" className="text-xs font-semibold text-[var(--color-accent-orange)]" onClick={() => setFilterOpen(true)}>
+          <h1 className="min-w-0 flex-1 truncate text-center text-lg font-bold text-[#3B2A1A]">Add New Post</h1>
+          <button type="button" className="shrink-0 text-xs font-semibold text-[var(--color-accent-orange)]" onClick={() => setFilterOpen(true)}>
             Filter
           </button>
         </header>
@@ -85,13 +85,13 @@ export function NewPostScreen() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#FAF8F4] px-4 pb-28 pt-[max(0.75rem,env(safe-area-inset-top))]">
+    <div className="min-h-dvh bg-[#FAF8F4] px-3 sm:px-4 pb-28 pt-[max(0.75rem,env(safe-area-inset-top))]">
       <header className="mb-4 flex items-center gap-2">
-        <button type="button" onClick={() => setStep(1)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white ring-1 ring-[var(--color-border)]">
+        <button type="button" onClick={() => setStep(1)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-[var(--color-border)]">
           <ChevronLeft className="h-6 w-6 text-[#3B2A1A]" />
         </button>
-        <h1 className="flex-1 text-center text-lg font-bold text-[#3B2A1A]">Create Post</h1>
-        <span className="w-10" />
+        <h1 className="min-w-0 flex-1 truncate text-center text-lg font-bold text-[#3B2A1A]">Create Post</h1>
+        <span className="w-10 shrink-0" />
       </header>
 
       <label className="mb-3 block text-sm font-medium text-[var(--color-text-secondary)]">
@@ -110,7 +110,7 @@ export function NewPostScreen() {
       </div>
 
       <p className="mb-2 text-xs font-bold uppercase text-[var(--color-text-muted)]">Add Metrics</p>
-      <div className="mb-4 flex gap-2 text-2xl">😢 😐 🙂 😄 🤩 ❤️</div>
+      <div className="mb-4 flex flex-wrap gap-2 text-2xl">😢 😐 🙂 😄 🤩 ❤️</div>
 
       <Toggle label="Hide From Community?" checked={hide} onChange={(e) => setHide(e.target.checked)} />
 

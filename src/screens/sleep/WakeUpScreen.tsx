@@ -1,3 +1,4 @@
+import { Moon, Sun } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useSwipeable } from "react-swipeable";
 import { cn } from "@/lib/utils";
@@ -29,7 +30,11 @@ export function WakeUpScreen() {
         phase === "morning" ? "bg-[#FAF8F4] text-[#3B2A1A]" : "bg-[#1a1208] text-[#FAF8F4]",
       )}
     >
-      <div className="text-6xl">{phase === "morning" ? "🌤️" : "🌙"}</div>
+      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/10">
+        {phase === "morning"
+          ? <Sun className="h-10 w-10 text-[var(--color-accent-yellow)]" strokeWidth={1.5} />
+          : <Moon className="h-10 w-10 text-[var(--color-accent-purple)]" strokeWidth={1.5} />}
+      </div>
       <h1 className="mt-6 text-2xl font-bold">
         {phase === "morning" ? `Wake Up, ${name}!` : `Good Night, ${name}!`}
       </h1>

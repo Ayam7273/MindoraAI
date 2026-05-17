@@ -335,7 +335,7 @@ export function MentalHealthAssessmentScreen() {
         </p>
       </header>
 
-      <div className="flex flex-1 flex-col px-4 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-4">
+      <div className="flex flex-1 flex-col px-3 sm:px-4 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}

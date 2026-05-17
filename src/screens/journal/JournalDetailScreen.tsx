@@ -80,13 +80,13 @@ export function JournalDetailScreen() {
         <span className="w-10" />
       </header>
 
-      <div className="px-4 pt-4">
+      <div className="px-3 sm:px-4 pt-4">
         <p className="mb-3 text-xs text-[var(--color-text-muted)]">
           {format(new Date(entry.timestamp), "EEEE, MMMM d, yyyy · h:mm a")}
         </p>
 
-        <article className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 text-sm leading-relaxed text-[var(--color-text-primary)] shadow-[var(--shadow-sm)]">
-          <p className="whitespace-pre-wrap">{entry.body}</p>
+        <article className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 text-sm leading-relaxed text-[var(--color-text-primary)] shadow-[var(--shadow-sm)]">
+          <p className="whitespace-pre-wrap break-words">{entry.body}</p>
         </article>
 
         {entry.aiReflection ? (

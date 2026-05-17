@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Bot, ChevronLeft, Mic } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
@@ -26,7 +26,7 @@ export function VoiceChatScreen() {
           <Bot className="h-8 w-8" strokeWidth={1.5} />
         </div>
         <p className="text-lg font-medium">Say anything that&apos;s on your mind.</p>
-        <p className="mt-2 text-sm text-white/60">Demo: tap mic to simulate live transcription.</p>
+        <p className="mt-2 text-sm text-white/60">tap mic to begin voice input.</p>
       </div>
 
       <div className="px-4 pb-4">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { ChevronLeft, Heart, MessageCircle, Share2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
@@ -47,7 +47,7 @@ export function UserProfileScreen() {
             <p className="text-[10px] text-[var(--color-text-muted)]">Following</p>
           </div>
         </div>
-        <p className="mt-4 text-sm text-[var(--color-text-secondary)]">Building gentle habits, one day at a time. {tab.toUpperCase()} view (demo).</p>
+        <p className="mt-4 text-sm text-[var(--color-text-secondary)]">Building gentle habits, one day at a time. {tab.toUpperCase()} view .</p>
 
         <div className="mt-4 flex gap-2 overflow-x-auto border-b border-[var(--color-border)] pb-2">
           {(["all", "post", "video", "audio"] as const).map((t) => (
@@ -78,7 +78,7 @@ export function UserProfileScreen() {
               </span>
             </div>
             <button type="button" className="mt-3 text-xs font-semibold text-red-600 underline" onClick={() => setDeleteOpen(true)}>
-              Delete post (demo)
+              Delete post 
             </button>
           </div>
         </article>

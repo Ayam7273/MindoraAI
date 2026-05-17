@@ -1,4 +1,4 @@
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Headphones, MessageCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -13,8 +13,8 @@ export function LiveChatScreen() {
         </button>
         <span className="flex-1" />
       </header>
-      <div className="text-7xl" aria-hidden>
-        🎧
+      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-accent-green-light)]" aria-hidden>
+        <Headphones className="h-10 w-10 text-[var(--color-accent-green)]" strokeWidth={1.5} />
       </div>
       <h1 className="mt-6 text-xl font-bold text-[#3B2A1A]">We are here to help you with your mental health needs!</h1>
       <p className="mt-3 max-w-sm text-sm text-[var(--color-text-secondary)]">We aim to reply within a few minutes</p>
@@ -24,7 +24,10 @@ export function LiveChatScreen() {
           "mt-10 flex w-full max-w-xs items-center justify-center rounded-full bg-[#3B2A1A] px-4 py-3 text-sm font-semibold text-[#FAF8F4] hover:bg-[#2a1d12]",
         )}
       >
-        Live Chat 💬
+        <span className="inline-flex items-center gap-2">
+          <MessageCircle className="h-4 w-4" />
+          Live Chat
+        </span>
       </Link>
     </div>
   );

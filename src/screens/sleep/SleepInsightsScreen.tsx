@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { TopBar } from "@/components/ui/TopBar";
 import { Sheet } from "@/components/ui/Sheet";
@@ -29,7 +29,7 @@ export function SleepInsightsScreen() {
         ))}
       </div>
       <div className="mx-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4">
-        <p className="text-center text-xs text-[var(--color-text-muted)]">Grouped stages (demo)</p>
+        <p className="text-center text-xs text-[var(--color-text-muted)]">Grouped stages </p>
         <div className="mt-4 flex h-40 items-end justify-between gap-1">
           {[0.6, 0.45, 0.7, 0.5, 0.55, 0.65, 0.4].map((h, i) => (
             <div key={i} className="flex flex-1 gap-0.5">

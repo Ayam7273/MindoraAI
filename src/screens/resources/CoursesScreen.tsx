@@ -1,65 +1,48 @@
-import { Link, useNavigate } from "react-router-dom";
-import { ChevronLeft, Play } from "lucide-react";
-
-const CHIPS = ["Health", "Meditation", "Stress"];
-
-const LIST = [
-  { id: "1", title: "Indian Meditation", author: "Alan Watts", rating: "4.7", lessons: 10 },
-  { id: "2", title: "Mindfulness 101", author: "Dr. Hannibal Lecter", rating: "4.8", lessons: 10 },
-];
+import { useNavigate } from "react-router-dom";
+import { ChevronLeft, Music2 } from "lucide-react";
 
 export function CoursesScreen() {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-28">
-      <header className="bg-[var(--color-accent-orange)] px-3 pb-4 pt-[max(0.5rem,env(safe-area-inset-top))] text-white">
-        <div className="mb-3 flex items-center gap-2">
-          <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20" aria-label="Back">
+      <header className="bg-[#3B2A1A] px-4 pb-6 pt-[max(0.5rem,env(safe-area-inset-top))] text-white">
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10" aria-label="Back">
             <ChevronLeft className="h-6 w-6" />
           </button>
-          <h1 className="flex-1 text-center text-lg font-bold">Our Courses</h1>
-          <span className="w-10" />
+          <div className="flex flex-1 items-center gap-2">
+            <Music2 className="h-5 w-5 text-[#1DB954]" strokeWidth={1.75} />
+            <h1 className="text-lg font-bold">Recommended Playlist</h1>
+          </div>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {CHIPS.map((c) => (
-            <span key={c} className="shrink-0 rounded-full bg-white/20 px-3 py-1 text-xs font-bold">
-              {c}
-            </span>
-          ))}
-        </div>
+        <p className="mt-2 text-sm text-white/70">Mindora's curated mental wellness music</p>
       </header>
 
-      <div className="-mt-4 px-3">
-        <Link to="/resources/course/featured" className="relative mb-4 block overflow-hidden rounded-2xl shadow-lg">
-          <div className="h-44 bg-gradient-to-br from-emerald-200 to-teal-400" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/40 text-white">
-              <Play className="h-7 w-7 fill-current" />
-            </span>
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white">
-            <p className="text-lg font-bold">Gratefulness in Nature</p>
-            <p className="text-xs text-white/80">Featured course</p>
-          </div>
-        </Link>
+      <div className="space-y-6 px-4 pt-6 lg:px-8">
+        <div className="overflow-hidden rounded-2xl shadow-lg">
+          <iframe
+            title="Mindora Recommended Playlist"
+            style={{ borderRadius: "16px" }}
+            src="https://open.spotify.com/embed/playlist/77AOjGgwOTmcDiH15lARCh?utm_source=generator&theme=0"
+            width="100%"
+            height="352"
+            frameBorder="0"
+            allowFullScreen
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+          />
+        </div>
 
-        <h2 className="mb-2 text-sm font-bold text-[#3B2A1A]">All Courses</h2>
-        <ul className="space-y-2">
-          {LIST.map((c) => (
-            <li key={c.id}>
-              <Link to={`/resources/course/${c.id}`} className="flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-3">
-                <div className="h-12 w-12 shrink-0 rounded-full bg-[var(--color-bg-secondary)]" />
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-[#3B2A1A]">{c.title}</p>
-                  <p className="text-xs text-[var(--color-text-muted)]">
-                    {c.author} · ⭐ {c.rating} · {c.lessons} lessons
-                  </p>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-5">
+          <h2 className="text-sm font-bold text-[var(--color-primary)]">Why Music Matters for Mental Health</h2>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+            Music directly influences the brain's limbic system — the emotional core responsible for mood, motivation, and stress response. Listening to carefully selected music can reduce cortisol levels, slow heart rate, and activate the parasympathetic nervous system, creating a physiological state conducive to calm, focus, and emotional processing.
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+            This playlist has been curated with mental wellness in mind — featuring ambient, acoustic, and mindful tracks that support meditation, journalling, breathing exercises, and restful wind-down routines. Listen whenever you need to reset.
+          </p>
+        </div>
       </div>
     </div>
   );

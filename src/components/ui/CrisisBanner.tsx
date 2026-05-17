@@ -14,13 +14,13 @@ export function CrisisBanner({ compact = false }: CrisisBannerProps) {
       <div className="rounded-[var(--radius-lg)] border border-red-200 bg-red-50 p-3">
         <button
           type="button"
-          className="flex w-full items-center justify-between gap-2"
+          className="flex w-full items-center justify-between gap-2 overflow-hidden"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
         >
-          <span className="flex items-center gap-2 text-xs font-semibold text-red-700">
+          <span className="flex min-w-0 items-center gap-2 text-xs font-semibold text-red-700">
             <AlertCircle className="h-4 w-4 shrink-0" />
-            In crisis? Get help now
+            <span className="truncate">In crisis? Get help now</span>
           </span>
           {expanded ? (
             <ChevronUp className="h-4 w-4 shrink-0 text-red-500" />

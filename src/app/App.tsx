@@ -36,7 +36,6 @@ import { JournalScreen } from "@/screens/journal/JournalScreen";
 import { NewJournalScreen } from "@/screens/journal/NewJournalScreen";
 import { ExerciseActiveScreen } from "@/screens/mindful/ExerciseActiveScreen";
 import { ExerciseCompleteScreen } from "@/screens/mindful/ExerciseCompleteScreen";
-import { MindfulExerciseScreen } from "@/screens/mindful/MindfulExerciseScreen";
 import { MindfulHoursScreen } from "@/screens/mindful/MindfulHoursScreen";
 import { MindfulHoursStatsScreen } from "@/screens/mindful/MindfulHoursStatsScreen";
 import { MoodAISuggestionsScreen } from "@/screens/mood/MoodAISuggestionsScreen";
@@ -113,7 +112,7 @@ export default function App() {
             <Route path="/sleep/results" element={<SleepResultsScreen />} />
             <Route path="/mindful" element={<MindfulHoursScreen />} />
             <Route path="/mindful/stats" element={<MindfulHoursStatsScreen />} />
-            <Route path="/mindful/exercise" element={<MindfulExerciseScreen />} />
+            <Route path="/mindful/exercise" element={<ExerciseActiveScreen />} />
             <Route path="/mindful/exercise/active" element={<ExerciseActiveScreen />} />
             <Route path="/mindful/complete" element={<ExerciseCompleteScreen />} />
             <Route path="/chatbot" element={<AIChatbotScreen />} />

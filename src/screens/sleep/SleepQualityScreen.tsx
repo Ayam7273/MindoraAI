@@ -18,11 +18,11 @@ export function SleepQualityScreen() {
       <div className={poor ? "bg-[#7B6EC8] text-white" : "bg-[var(--color-accent-green)] text-white"}>
         <div className="h-[env(safe-area-inset-top,0px)]" aria-hidden />
         <header className="flex items-center px-2 py-1">
-          <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
+          <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15">
             <ChevronLeft className="h-6 w-6" />
           </button>
-          <h1 className="flex-1 text-center text-lg font-semibold">Sleep Quality</h1>
-          <span className="w-10" />
+          <h1 className="min-w-0 flex-1 truncate text-center text-lg font-semibold">Sleep Quality</h1>
+          <span className="w-10 shrink-0" />
         </header>
         <div className="px-6 pb-10 pt-4 text-center">
           <p className="text-6xl font-bold tabular-nums">{score}</p>
@@ -30,7 +30,7 @@ export function SleepQualityScreen() {
         </div>
       </div>
 
-      <div className="-mt-4 space-y-4 px-4 lg:grid lg:grid-cols-[1fr_380px] lg:gap-8 lg:px-8 lg:pt-6 lg:space-y-0">
+      <div className="-mt-4 space-y-4 px-3 sm:px-4 lg:grid lg:grid-cols-[1fr_380px] lg:gap-8 lg:px-8 lg:pt-6 lg:space-y-0">
         {/* Left column: sleep quality display + action buttons */}
         <div className="space-y-4">
           <Card>
@@ -87,9 +87,9 @@ export function SleepQualityScreen() {
           <section>
             <h2 className="mb-2 text-sm font-bold text-[var(--color-primary)]">Sleep History</h2>
             {HISTORY.map((h) => (
-              <div key={h.day} className="mb-2 flex items-center justify-between rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white px-3 py-3">
-                <div>
-                  <p className="text-xs text-[var(--color-text-muted)]">{h.day}</p>
+              <div key={h.day} className="mb-2 flex items-center justify-between gap-2 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white px-3 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs text-[var(--color-text-muted)]">{h.day}</p>
                   <p className="font-semibold text-[var(--color-primary)]">{h.hours}</p>
                 </div>
                 <span

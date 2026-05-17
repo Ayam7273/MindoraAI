@@ -29,7 +29,7 @@ export function JournalListScreen() {
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <h1 className="flex-1 text-center text-lg font-semibold text-[var(--color-primary)]">
+        <h1 className="min-w-0 flex-1 truncate text-center text-lg font-semibold text-[var(--color-primary)]">
           Journal Timeline
         </h1>
         <button
@@ -58,9 +58,9 @@ export function JournalListScreen() {
           </Button>
         </div>
       ) : (
-        <ul className="space-y-3 px-4 pt-4 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0 lg:px-8">
+        <ul className="space-y-3 px-3 sm:px-4 pt-4 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0 lg:px-8">
           {entries.map((entry) => (
-            <li key={entry.id} className="rounded-[var(--radius-xl)] bg-white ring-1 ring-[var(--color-border)]">
+            <li key={entry.id} className="overflow-hidden rounded-[var(--radius-xl)] bg-white ring-1 ring-[var(--color-border)]">
               <button
                 type="button"
                 className="flex w-full items-start gap-3 p-4 text-left"
@@ -70,7 +70,7 @@ export function JournalListScreen() {
                   <p className="text-[10px] font-semibold text-[var(--color-text-muted)]">
                     {format(new Date(entry.timestamp), "EEEE, MMM d · h:mm a")}
                   </p>
-                  <p className="mt-0.5 font-semibold text-[var(--color-primary)]">{entry.title}</p>
+                  <p className="mt-0.5 truncate font-semibold text-[var(--color-primary)]">{entry.title}</p>
                   {expanded !== entry.id && (
                     <p className="mt-1 line-clamp-2 text-xs text-[var(--color-text-secondary)]">
                       {entry.body}
@@ -86,7 +86,7 @@ export function JournalListScreen() {
 
               {expanded === entry.id && (
                 <div className="border-t border-[var(--color-border)] px-4 pb-4 pt-3">
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-text-primary)]">
+                  <p className="break-words whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-text-primary)]">
                     {entry.body}
                   </p>
                   {entry.aiReflection && (

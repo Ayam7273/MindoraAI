@@ -60,7 +60,7 @@ export function StressLogScreen() {
           </div>
           <h2 className="mt-4 text-lg font-bold text-[var(--color-primary)]">Stress Level Set to {level}</h2>
           <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-            Logged to your journal and shared with Mindora AI (demo).
+            Logged to your journal and shared with Mindora AI .
           </p>
           <Button type="button" fullWidth className="mt-6 rounded-full" onClick={() => navigate("/stress")}>
             Got it, thanks!
@@ -148,7 +148,7 @@ export function StressLogScreen() {
             })}
           </div>
           <p className="mt-4 rounded-lg border border-[var(--color-accent-orange)] bg-[var(--color-accent-orange-light)] px-3 py-2 text-xs text-[var(--color-accent-orange)]">
-            ⚠️ Life Impact: Very High
+            Life Impact: Very High
           </p>
           <Button type="button" fullWidth className="mt-6 rounded-full" onClick={() => setStep(2)}>
             Continue →

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+﻿import { useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, Play } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -40,7 +40,7 @@ export function CourseDetailScreen() {
         </div>
         <h2 className="mt-3 text-2xl font-bold text-[#3B2A1A]">Mindfulness 101</h2>
         <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-          Course #{id} · ⭐ 4.8 · 10 lessons · ~2h
+          Course #{id} ·  4.8 · 10 lessons · ~2h
         </p>
 
         <div className="mt-4 flex items-center gap-3">
@@ -70,7 +70,7 @@ export function CourseDetailScreen() {
               <div className="flex-1">
                 <p className="text-sm font-semibold text-[#3B2A1A]">{l.title}</p>
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  {l.dur} · ⭐ {l.r}
+                  {l.dur} ·  {l.r}
                 </p>
               </div>
             </li>

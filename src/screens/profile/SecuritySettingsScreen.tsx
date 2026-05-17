@@ -30,7 +30,7 @@ export function SecuritySettingsScreen() {
 
       <div className="mb-4 rounded-xl bg-white p-4 ring-1 ring-[var(--color-border)]">
         <p className="text-sm font-semibold text-[#3B2A1A]">2FA — Google Authenticator</p>
-        <p className="text-xs text-[var(--color-text-muted)]">Status: Inactive (demo)</p>
+        <p className="text-xs text-[var(--color-text-muted)]">Status: Inactive </p>
       </div>
 
       <div className="mb-4 rounded-xl bg-white p-4 ring-1 ring-[var(--color-border)]">
