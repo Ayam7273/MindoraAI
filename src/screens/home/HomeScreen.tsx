@@ -106,118 +106,138 @@ export function HomeScreen() {
   );
 
   return (
-    <div className="min-h-dvh bg-[#FAF8F4]">
+    <div className="home-root min-h-dvh bg-[#FAF8F4]">
 
       {/* ══════════════════════════════════════════════════
           MOBILE LAYOUT  (hidden on lg+)
       ══════════════════════════════════════════════════ */}
-      <div className="lg:hidden">
+      <div className="w-full overflow-x-hidden lg:hidden">
         {sharedHeader}
 
-        <div className="space-y-4 px-3 pb-28 pt-3">
+        {/* home-mobile-content: padded container; CSS overrides at 999px / 500px */}
+        <div className="home-mobile-content w-full space-y-4 pb-28 pt-3">
           <CrisisBanner compact />
 
-          {/* Affirmation — compact */}
-          <div className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-[var(--color-border)]">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-accent-green)]">Daily Affirmation</p>
-            <p className="mt-1 text-sm font-medium leading-snug text-[var(--color-text-primary)]">{affirmation}</p>
-          </div>
+          {/* Affirmation — same component as desktop */}
+          <DailyAffirmation text={affirmation} />
 
           {/* Mood check-in */}
           <button
             type="button"
             onClick={() => navigate("/mood/set")}
-            className="w-full rounded-2xl bg-[var(--color-accent-orange)] px-4 py-3.5 text-left text-white shadow-md transition-transform active:scale-[0.98]"
+            className="home-checkin w-full rounded-2xl bg-[var(--color-accent-orange)] px-4 py-4 text-left text-white shadow-md transition-transform active:scale-[0.98]"
           >
-            <p className="text-xs font-semibold text-white/75">Daily Check-in</p>
-            <p className="mt-0.5 text-base font-bold">How are you feeling today?</p>
+            <p className="home-checkin-label text-xs font-semibold text-white/75">Daily Check-in</p>
+            <p className="home-checkin-title mt-0.5 break-words text-base font-bold">How are you feeling today?</p>
+            <p className="home-checkin-hint mt-0.5 text-xs text-white/65">Tap to log your mood</p>
           </button>
 
-          {/* Score + Mood */}
-          <div className="grid grid-cols-2 gap-3">
-            <Link to="/mindora-score" className="flex flex-col rounded-2xl bg-[var(--color-accent-green-light)] p-3 ring-1 ring-[var(--color-accent-green)]/30">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-accent-green)]">Score</span>
-              <span className="mt-1 text-2xl font-bold text-[var(--color-primary)]">{score}</span>
-              <span className="text-[10px] text-[var(--color-text-secondary)]">Mentally Stable</span>
-            </Link>
-            <Link to="/mood" className="flex flex-col rounded-2xl bg-[var(--color-accent-orange-light)] p-3 ring-1 ring-[var(--color-accent-orange)]/25">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-accent-orange)]">Mood</span>
-              <div className="mt-1.5 flex items-center gap-1.5">
-                <MoodEmoji mood={currentMood} size={30} />
-                <BarChart3 className="h-6 w-6 text-[var(--color-accent-orange)]" strokeWidth={1.5} />
+          {/* Score + Mood — stacked vertically; CSS enforces flex-col at 999px */}
+          <div className="home-score-grid flex w-full flex-col gap-3">
+            <Link
+              to="/mindora-score"
+              className="home-score-card flex w-full flex-row items-center justify-between rounded-2xl bg-[var(--color-accent-green-light)] px-5 py-4 ring-1 ring-[var(--color-accent-green)]/30"
+            >
+              <div>
+                <span className="home-score-label text-[10px] font-bold uppercase tracking-wide text-[var(--color-accent-green)]">
+                  Mindora Score
+                </span>
+                <p className="home-score-value mt-1 text-3xl font-bold text-[var(--color-primary)]">{score}</p>
+                <span className="home-score-sublabel text-xs text-[var(--color-text-secondary)]">Mentally Stable</span>
               </div>
-              <span className="mt-1 text-[10px] text-[var(--color-text-secondary)]">Weekly view</span>
+              <div className="home-score-icon-wrap flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-green)]/10">
+                <BarChart3 className="h-7 w-7 text-[var(--color-accent-green)]" strokeWidth={1.5} />
+              </div>
+            </Link>
+
+            <Link
+              to="/mood"
+              className="home-mood-card flex w-full flex-row items-center justify-between rounded-2xl bg-[var(--color-accent-orange-light)] px-5 py-4 ring-1 ring-[var(--color-accent-orange)]/25"
+            >
+              <div>
+                <span className="home-score-label text-[10px] font-bold uppercase tracking-wide text-[var(--color-accent-orange)]">
+                  Current Mood
+                </span>
+                <p className="mt-1 text-base font-bold text-[var(--color-primary)]">{moodLabel}</p>
+                <span className="text-xs text-[var(--color-text-secondary)]">Tap to view weekly</span>
+              </div>
+              <MoodEmoji mood={currentMood} size={48} className="shrink-0" />
             </Link>
           </div>
 
-          {/* Quick access — 4 icons in a row */}
+          {/* Quick Access — 2×2 grid; CSS enforces grid-template-columns at 999px */}
           <section>
-            <p className="mb-2 text-xs font-bold text-[var(--color-primary)]">Quick Access</p>
-            <div className="grid grid-cols-4 gap-2">
+            <p className="home-section-heading mb-3 text-xs font-bold text-[var(--color-primary)]">Quick Access</p>
+            <div className="home-quick-grid grid w-full grid-cols-2 gap-3">
               {[
-                { to: "/chatbot", icon: <Bot className="h-5 w-5 text-white" strokeWidth={1.75} />, label: "AI Chat", bg: "bg-[#3d3d3d]", text: "text-white" },
-                { to: "/journal", icon: <BookOpen className="h-5 w-5 text-[var(--color-accent-green)]" strokeWidth={1.75} />, label: "Journal", bg: "bg-[var(--color-accent-green-light)]", text: "text-[var(--color-primary)]" },
-                { to: "/mindful/exercise", icon: <Wind className="h-5 w-5 text-blue-500" strokeWidth={1.75} />, label: "Breathe", bg: "bg-[#e8f4fd]", text: "text-[var(--color-primary)]" },
-                { to: "/mindora-score", icon: <BarChart3 className="h-5 w-5 text-[var(--color-accent-orange)]" strokeWidth={1.75} />, label: "Progress", bg: "bg-[var(--color-accent-orange-light)]", text: "text-[var(--color-primary)]" },
+                { to: "/chatbot",      icon: <Bot      className="h-7 w-7 text-white"                         strokeWidth={1.75} />, label: "AI Chat",  bg: "bg-[#3d3d3d]",                      text: "text-white" },
+                { to: "/journal",      icon: <BookOpen className="h-7 w-7 text-[var(--color-accent-green)]"   strokeWidth={1.75} />, label: "Journal",  bg: "bg-[var(--color-accent-green-light)]", text: "text-[var(--color-primary)]" },
+                { to: "/mindful/exercise", icon: <Wind className="h-7 w-7 text-blue-500"                       strokeWidth={1.75} />, label: "Breathe",  bg: "bg-[#e8f4fd]",                      text: "text-[var(--color-primary)]" },
+                { to: "/mindora-score",icon: <BarChart3 className="h-7 w-7 text-[var(--color-accent-orange)]" strokeWidth={1.75} />, label: "Progress", bg: "bg-[var(--color-accent-orange-light)]", text: "text-[var(--color-primary)]" },
               ].map((item) => (
-                <Link key={item.to} to={item.to} className={cn("flex flex-col items-center gap-1.5 rounded-xl p-2.5 shadow-sm", item.bg)}>
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn("home-quick-card flex flex-col items-center justify-center gap-2 rounded-2xl py-5 shadow-sm", item.bg)}
+                >
                   {item.icon}
-                  <span className={cn("text-[10px] font-semibold", item.text)}>{item.label}</span>
+                  <span className={cn("home-quick-label text-sm font-semibold", item.text)}>{item.label}</span>
                 </Link>
               ))}
             </div>
           </section>
 
-          {/* Mindful Tracker — horizontal scroll */}
+          {/* Mindful Tracker — horizontal scroll; min-width enforced by CSS at 999px & 500px */}
           <section>
-            <p className="mb-2 text-xs font-bold text-[var(--color-primary)]">Mindful Tracker</p>
-            <div className="flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <p className="home-section-heading mb-3 text-xs font-bold text-[var(--color-primary)]">Mindful Tracker</p>
+            <div className="home-tracker-scroll flex flex-row gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {[
-                { to: "/mindful", icon: <Sparkles className="h-4 w-4 text-[var(--color-accent-green)]" />, label: "Mindful Hours", value: "Today", bg: "bg-[var(--color-accent-green-light)]" },
-                { to: "/sleep", icon: <Moon className="h-4 w-4 text-[var(--color-accent-purple)]" />, label: "Sleep", value: "Quality", bg: "bg-[#ede8f5]" },
-                { to: "/journal", icon: <BookOpen className="h-4 w-4 text-[var(--color-primary)]" />, label: "Journal", value: "Streak", bg: "bg-[var(--color-bg-secondary)]" },
-                { to: "/stress", icon: <Brain className="h-4 w-4 text-[var(--color-accent-orange)]" />, label: "Stress", value: "Level", bg: "bg-[var(--color-accent-orange-light)]" },
-                { to: "/mood", icon: <Heart className="h-4 w-4 text-[var(--color-danger)]" />, label: "Mood", value: "Tracker", bg: "bg-[var(--color-surface)]" },
-                { to: "/mindful/exercise", icon: <Wind className="h-4 w-4 text-blue-400" />, label: "Breathing", value: "Exercises", bg: "bg-[#e8f4fd]" },
+                { to: "/mindful",           icon: <Sparkles  className="h-5 w-5 text-[var(--color-accent-green)]"   />, label: "Mindful Hours", value: "Today",     bg: "bg-[var(--color-accent-green-light)]" },
+                { to: "/sleep",             icon: <Moon      className="h-5 w-5 text-[var(--color-accent-purple)]"  />, label: "Sleep Quality",  value: "Quality",   bg: "bg-[#ede8f5]" },
+                { to: "/journal",           icon: <BookOpen  className="h-5 w-5 text-[var(--color-primary)]"        />, label: "Journal",        value: "Streak",    bg: "bg-[var(--color-bg-secondary)]" },
+                { to: "/stress",            icon: <Brain     className="h-5 w-5 text-[var(--color-accent-orange)]"  />, label: "Stress Level",   value: "Level 2",   bg: "bg-[var(--color-accent-orange-light)]" },
+                { to: "/mood",              icon: <Heart     className="h-5 w-5 text-[var(--color-danger)]"         />, label: "Mood Tracker",   value: "Today",     bg: "bg-[var(--color-surface)]" },
+                { to: "/mindful/exercise",  icon: <Wind      className="h-5 w-5 text-blue-400"                      />, label: "Breathing",      value: "Exercises", bg: "bg-[#e8f4fd]" },
               ].map((item) => (
                 <Link
                   key={item.to + item.label}
                   to={item.to}
-                  className={cn("flex min-w-[7rem] shrink-0 flex-col rounded-xl p-3 ring-1 ring-[var(--color-border)]", item.bg)}
+                  className={cn("home-tracker-card flex shrink-0 flex-col rounded-2xl ring-1 ring-[var(--color-border)] shadow-sm", item.bg)}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-text-secondary)]">{item.label}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="home-tracker-label text-[10px] font-bold uppercase leading-tight tracking-wide text-[var(--color-text-secondary)]">
+                      {item.label}
+                    </span>
                     {item.icon}
                   </div>
-                  <p className="mt-1.5 text-sm font-bold text-[var(--color-primary)]">{item.value}</p>
+                  <p className="home-tracker-value mt-2 text-base font-bold text-[var(--color-primary)]">{item.value}</p>
                 </Link>
               ))}
             </div>
           </section>
 
-          {/* Mindful Resources — horizontal scroll with real images */}
+          {/* Mindful Resources — horizontal scroll; min-width enforced by CSS at 999px & 500px */}
           <section>
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-xs font-bold text-[var(--color-primary)]">Mindful Resources</p>
-              <Link to="/resources" className="text-[10px] font-semibold text-[var(--color-accent-green)]">See all</Link>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="home-section-heading text-xs font-bold text-[var(--color-primary)]">Mindful Resources</p>
+              <Link to="/resources" className="text-xs font-semibold text-[var(--color-accent-green)]">See all</Link>
             </div>
-            <div className="flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="home-resources-scroll flex flex-row gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {ARTICLES.map((a) => (
                 <Link
                   key={a.id}
                   to={`/resources/article/${a.id}`}
-                  className="min-w-[9.5rem] max-w-[9.5rem] shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[var(--color-border)]"
+                  className="home-resource-card shrink-0 overflow-hidden bg-white shadow-sm ring-1 ring-[var(--color-border)]"
                 >
-                  <div className="relative h-20 overflow-hidden bg-[var(--color-bg-secondary)]">
-                    <img
-                      src={a.image}
-                      alt={a.title}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="p-2">
-                    <span className="text-[9px] font-bold uppercase text-[var(--color-accent-green)]">{a.category}</span>
-                    <p className="mt-0.5 line-clamp-2 text-[10px] font-semibold leading-tight text-[var(--color-text-primary)]">{a.title}</p>
+                  <img
+                    src={a.image}
+                    alt={a.title}
+                    className="home-resource-image h-28 w-full object-cover"
+                  />
+                  <div className="home-resource-body p-3">
+                    <span className="home-resource-category text-[10px] font-bold uppercase text-[var(--color-accent-green)]">{a.category}</span>
+                    <p className="home-resource-title mt-1 line-clamp-2 text-xs font-semibold leading-snug text-[var(--color-text-primary)]">{a.title}</p>
+                    <p className="home-resource-read-time mt-1 text-[10px] text-[var(--color-text-muted)]">{a.readTime}</p>
                   </div>
                 </Link>
               ))}
