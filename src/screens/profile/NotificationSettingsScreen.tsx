@@ -1,4 +1,4 @@
-import { ChevronLeft } from "lucide-react";
+﻿import { ChevronLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Toggle } from "@/components/ui/Toggle";
@@ -52,7 +52,7 @@ export function NotificationSettingsScreen() {
       </Link>
 
       <Button type="button" fullWidth className="mt-8 rounded-full" onClick={() => navigate(-1)}>
-        Save Settings ✓
+        Save Settings
       </Button>
     </div>
   );

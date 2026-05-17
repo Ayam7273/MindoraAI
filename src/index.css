@@ -5,32 +5,9 @@
 @tailwind components;
 @tailwind utilities;
 
-@media (min-width: 431px) {
-  body::before {
-    content: "Mindora AI is only available on mobile devices.";
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    inset: 0;
-    background: #f5f0e8;
-    font-family: sans-serif;
-    font-size: 1.1rem;
-    color: #3d2c1e;
-    z-index: 9999;
-    text-align: center;
-    padding: 2rem;
-  }
-  #root {
-    display: none;
-  }
-}
-
 #root {
-  max-width: 430px;
   min-height: 100dvh;
-  margin: 0 auto;
   position: relative;
   overflow-x: hidden;
-  background: #faf8f4;
+  background: var(--color-bg);
 }

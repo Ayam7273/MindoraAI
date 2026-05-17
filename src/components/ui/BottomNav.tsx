@@ -35,7 +35,7 @@ export function BottomNav() {
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2",
+        "fixed bottom-0 left-0 z-50 w-full lg:hidden",
         "border-t border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-sm)]",
       )}
       style={{

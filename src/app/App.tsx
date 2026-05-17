@@ -58,6 +58,7 @@ import { SecuritySettingsScreen } from "@/screens/profile/SecuritySettingsScreen
 import { SendFeedbackScreen } from "@/screens/profile/SendFeedbackScreen";
 import { ArticleDetailScreen } from "@/screens/resources/ArticleDetailScreen";
 import { ArticlesScreen } from "@/screens/resources/ArticlesScreen";
+import { CopingToolkitScreen } from "@/screens/resources/CopingToolkitScreen";
 import { CourseCompleteScreen } from "@/screens/resources/CourseCompleteScreen";
 import { CourseDetailScreen } from "@/screens/resources/CourseDetailScreen";
 import { CoursePlayerScreen } from "@/screens/resources/CoursePlayerScreen";
@@ -124,6 +125,7 @@ export default function App() {
             <Route path="/resources" element={<ResourcesScreen />} />
             <Route path="/resources/articles" element={<ArticlesScreen />} />
             <Route path="/resources/courses" element={<CoursesScreen />} />
+            <Route path="/resources/coping" element={<CopingToolkitScreen />} />
             <Route path="/resources/article/:id" element={<ArticleDetailScreen />} />
             <Route path="/resources/course/:id" element={<CourseDetailScreen />} />
             <Route path="/resources/play/:courseId" element={<CoursePlayerScreen />} />

@@ -17,7 +17,7 @@ export function LiveChatScreen() {
         🎧
       </div>
       <h1 className="mt-6 text-xl font-bold text-[#3B2A1A]">We are here to help you with your mental health needs!</h1>
-      <p className="mt-3 max-w-sm text-sm text-[var(--color-text-secondary)]">We aim to reply within a few minutes 🙂</p>
+      <p className="mt-3 max-w-sm text-sm text-[var(--color-text-secondary)]">We aim to reply within a few minutes</p>
       <Link
         to="/help/live-chat/session"
         className={cn(

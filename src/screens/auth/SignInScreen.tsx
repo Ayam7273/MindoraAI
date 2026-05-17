@@ -6,14 +6,6 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { signIn, signInWithGoogle } from "@/services/authService";
 
-function FacebookIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
-    </svg>
-  );
-}
-
 function GoogleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
@@ -33,23 +25,6 @@ function GoogleIcon({ className }: { className?: string }) {
         fill="#FBBC05"
         d="M21.8 12.1c0-.8-.1-1.6-.2-2.4H12v4.6h5.5c-.2 1.3-.9 2.5-1.9 3.3l2.9 2.3c1.7-1.6 2.7-3.9 2.7-6.8z"
       />
-    </svg>
-  );
-}
-
-function InstagramIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <defs>
-        <linearGradient id="ig" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#f58529" />
-          <stop offset="50%" stopColor="#dd2a7b" />
-          <stop offset="100%" stopColor="#8134af" />
-        </linearGradient>
-      </defs>
-      <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#ig)" strokeWidth="2" />
-      <circle cx="12" cy="12" r="4.5" stroke="url(#ig)" strokeWidth="2" />
-      <circle cx="17.5" cy="6.5" r="1.2" fill="url(#ig)" />
     </svg>
   );
 }
@@ -157,29 +132,18 @@ export function SignInScreen() {
         </form>
 
         <div className="mt-8 flex justify-center gap-4">
-          {[
-            { label: "Facebook", el: <FacebookIcon className="h-5 w-5 text-[#1877F2]" /> },
-            {
-              label: "Google",
-              el: <GoogleIcon className="h-5 w-5" />,
-              onClick: async () => {
-                setError(null);
-                const { error: err } = await signInWithGoogle();
-                if (err) setError(err.message);
-              },
-            },
-            { label: "Instagram", el: <InstagramIcon className="h-6 w-6" /> },
-          ].map(({ label, el, onClick }) => (
-            <button
-              key={label}
-              type="button"
-              aria-label={`Continue with ${label}`}
-              onClick={onClick}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-[var(--shadow-sm)] ring-1 ring-[var(--color-border)] transition-transform active:scale-95"
-            >
-              {el}
-            </button>
-          ))}
+          <button
+            type="button"
+            aria-label="Continue with Google"
+            onClick={async () => {
+              setError(null);
+              const { error: err } = await signInWithGoogle();
+              if (err) setError(err.message);
+            }}
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-[var(--shadow-sm)] ring-1 ring-[var(--color-border)] transition-transform active:scale-95"
+          >
+            <GoogleIcon className="h-5 w-5" />
+          </button>
         </div>
 
         <p className="mt-auto pt-10 text-center text-[var(--text-sm)] text-[var(--color-text-secondary)]">

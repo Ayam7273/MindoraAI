@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, Mic } from "lucide-react";
+import { Bot, ChevronLeft, Mic } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 
@@ -20,10 +20,10 @@ export function VoiceChatScreen() {
 
       <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
         <div
-          className={`mb-8 flex h-40 w-40 items-center justify-center rounded-full text-7xl transition-transform ${on ? "scale-110 animate-pulse bg-white/10" : "bg-white/5"}`}
+          className={`mb-8 flex h-40 w-40 items-center justify-center rounded-full transition-transform ${on ? "scale-110 animate-pulse bg-white/10" : "bg-white/5"}`}
           aria-hidden
         >
-          🤖
+          <Bot className="h-8 w-8" strokeWidth={1.5} />
         </div>
         <p className="text-lg font-medium">Say anything that&apos;s on your mind.</p>
         <p className="mt-2 text-sm text-white/60">Demo: tap mic to simulate live transcription.</p>

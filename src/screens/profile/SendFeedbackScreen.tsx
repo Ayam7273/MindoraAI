@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Smile } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,7 @@ export function SendFeedbackScreen() {
           <ChevronLeft className="h-6 w-6 text-[#3B2A1A]" />
         </button>
         <h1 className="flex-1 text-center text-lg font-bold text-[#3B2A1A]">Send Feedback</h1>
-        <span className="text-2xl">😊</span>
+        <Smile className="h-8 w-8 text-[var(--color-accent-orange)]" strokeWidth={1.5} />
       </header>
 
       <p className="mb-3 text-sm font-semibold text-[#3B2A1A]">Which of the area needs improvement?</p>

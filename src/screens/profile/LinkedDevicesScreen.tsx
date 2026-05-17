@@ -1,4 +1,4 @@
-import { ChevronLeft } from "lucide-react";
+﻿import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -42,7 +42,7 @@ export function LinkedDevicesScreen() {
       </div>
 
       <Button type="button" fullWidth className="mt-8 rounded-full" onClick={() => navigate(-1)}>
-        Save Settings ✓
+        Save Settings
       </Button>
     </div>
   );

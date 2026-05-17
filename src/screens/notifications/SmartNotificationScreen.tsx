@@ -1,52 +1,53 @@
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Trophy, BookOpen, Smartphone, Wind, Heart, Moon } from "lucide-react";
+import type { ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 
 const CONFIG: Record<
   string,
-  { emoji: string; title: string; body: string; badge?: string; cta: string; to: string }
+  { icon: ReactNode; title: string; body: string; badge?: string; cta: string; to: string }
 > = {
   score: {
-    emoji: "🎉",
+    icon: <Trophy className="h-20 w-20 text-[var(--color-accent-orange)]" strokeWidth={1.5} />,
     title: "+8 Mindora Score Increased",
-    body: "You're 26% happier compared to last month. Congrats! 🥳",
+    body: "You're 26% happier compared to last month. Congrats!",
     badge: "Score Now: 88.5",
-    cta: "See Score 📈",
+    cta: "See Score",
     to: "/mindora-score",
   },
   journal: {
-    emoji: "📓",
+    icon: <BookOpen className="h-20 w-20 text-[var(--color-accent-green)]" strokeWidth={1.5} />,
     title: "21/30 Journal Completed",
     body: "You still need to complete 9 daily journals this month. Keep it up!",
-    cta: "See Journal 📓",
+    cta: "See Journal",
     to: "/journal",
   },
   therapy: {
-    emoji: "📱",
+    icon: <Smartphone className="h-20 w-20 text-[var(--color-text-secondary)]" strokeWidth={1.5} />,
     title: "05:25AM Session with Mindora AI",
     body: "You have a session with Mindora AI in 8h 21m from now.",
-    cta: "See Schedule 🗓️",
+    cta: "See Schedule",
     to: "/chatbot",
   },
   stress: {
-    emoji: "🧘",
+    icon: <Wind className="h-20 w-20 text-[var(--color-text-secondary)]" strokeWidth={1.5} />,
     title: "Neutral — Stress Decreased!",
     body: "You are now Neutral, Congrats!",
-    cta: "See Stress Level 🧘",
+    cta: "See Stress Level",
     to: "/stress",
   },
   meditation: {
-    emoji: "🙏",
+    icon: <Heart className="h-20 w-20 text-[var(--color-accent-green)]" strokeWidth={1.5} />,
     title: "It's Time!",
     body: "Time for meditation session. Mindora AI suggests you do a 25m session today.",
-    cta: "Let's Meditate →",
+    cta: "Let's Meditate",
     to: "/mindful/exercise",
   },
   sleep: {
-    emoji: "🛌",
+    icon: <Moon className="h-20 w-20 text-[var(--color-text-secondary)]" strokeWidth={1.5} />,
     title: "7h 50m — Sleep Quality Increased!",
     body: "Your sleep quality is 55% higher compared to last month.",
-    cta: "See Sleep Quality 🛌",
+    cta: "See Sleep Quality",
     to: "/sleep",
   },
 };
@@ -65,8 +66,8 @@ export function SmartNotificationScreen() {
       </header>
       <main className="flex flex-1 flex-col px-4 pb-10">
         <div className="flex flex-1 flex-col items-center justify-center text-center">
-          <div className="text-8xl" aria-hidden>
-            {cfg.emoji}
+          <div aria-hidden>
+            {cfg.icon}
           </div>
           <h1 className="mt-6 text-xl font-bold text-[#3B2A1A]">{cfg.title}</h1>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-[var(--color-text-secondary)]">{cfg.body}</p>

@@ -2,11 +2,11 @@ import type { MoodKey } from "@/types";
 import { cn } from "@/lib/utils";
 
 const BG: Record<MoodKey, string> = {
-  depressed: "var(--mood-depressed)",
-  sad: "var(--mood-sad)",
-  neutral: "var(--mood-neutral)",
-  happy: "var(--mood-happy)",
-  overjoyed: "var(--mood-overjoyed)",
+  depressed: "#ffffff",
+  sad: "#ffffff",
+  neutral: "#ffffff",
+  happy: "#ffffff",
+  overjoyed: "#ffffff",
 };
 
 function Face({ mood }: { mood: MoodKey }) {

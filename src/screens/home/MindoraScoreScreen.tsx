@@ -1,42 +1,41 @@
-import { useMemo, useState } from "react";
-import { ChevronLeft, SlidersHorizontal } from "lucide-react";
+import { useMemo } from "react";
+import { format, subDays } from "date-fns";
+import { BookOpen, ChevronLeft, Flame, Smile } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { MindoraScoreBadge } from "@/components/ui/MindoraScoreBadge";
 import { MoodEmoji } from "@/components/ui/MoodEmoji";
-import { Sheet } from "@/components/ui/Sheet";
-import { Toggle } from "@/components/ui/Toggle";
 import { useMindoraScore } from "@/hooks/useMindoraScore";
+import { getMoodEntries, getMoodTrend } from "@/lib/moodStorage";
+import { getJournalStreak } from "@/lib/journalStorage";
 import { useUiStore } from "@/store/uiStore";
 import type { MoodKey } from "@/types";
+import { cn } from "@/lib/utils";
 
-const HISTORY = [
-  { date: "Sep 12", label: "Anxious, Depressed", score: 62 },
-  { date: "Sep 10", label: "Stable", score: 78 },
-  { date: "Sep 4", label: "Happy stretch", score: 84 },
-];
+const MOOD_SCORE: Record<MoodKey, number> = {
+  depressed: 1,
+  sad: 2,
+  neutral: 3,
+  happy: 4,
+  overjoyed: 5,
+};
 
-const BAR_WEEKS = [
-  { pos: 0.65, neg: 0.2 },
-  { pos: 0.45, neg: 0.35 },
-  { pos: 0.7, neg: 0.15 },
-  { pos: 0.55, neg: 0.4 },
-  { pos: 0.8, neg: 0.1 },
-  { pos: 0.5, neg: 0.3 },
-  { pos: 0.72, neg: 0.22 },
-];
-
-const MOOD_ROW: MoodKey[] = ["depressed", "sad", "neutral", "happy", "overjoyed", "happy", "neutral"];
+const MOOD_COLOR: Record<MoodKey, string> = {
+  depressed: "bg-[var(--mood-depressed)]",
+  sad: "bg-[var(--mood-sad)]",
+  neutral: "bg-[var(--mood-neutral)]",
+  happy: "bg-[var(--mood-happy)]",
+  overjoyed: "bg-[var(--mood-overjoyed)]",
+};
 
 export function MindoraScoreScreen() {
   const navigate = useNavigate();
   const userId = useUiStore((s) => s.user?.id);
   const { score } = useMindoraScore(userId);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [from, setFrom] = useState("2025-09-01");
-  const [to, setTo] = useState("2025-09-30");
-  const [range, setRange] = useState(25);
-  const [includeAi, setIncludeAi] = useState(true);
+
+  const moodEntries = useMemo(() => getMoodEntries(), []);
+  const journalStreak = useMemo(() => getJournalStreak(), []);
+  const trend = useMemo(() => getMoodTrend(), []);
 
   const status = useMemo(() => {
     if (score >= 70) return "Mentally Stable";
@@ -44,13 +43,60 @@ export function MindoraScoreScreen() {
     return "Seek Support";
   }, [score]);
 
+  // Last 7 mood entries for display
+  const recentMoods = moodEntries.slice(0, 7);
+
+  // Average mood score over last 7 days
+  const avgMood =
+    recentMoods.length > 0
+      ? (recentMoods.reduce((s, e) => s + MOOD_SCORE[e.mood], 0) / recentMoods.length).toFixed(1)
+      : null;
+
+  // Check-in streak (consecutive days with mood entry)
+  const moodStreak = useMemo(() => {
+    if (!moodEntries.length) return 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = subDays(today, i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const hasEntry = moodEntries.some((e) => e.timestamp.startsWith(dateStr));
+      if (!hasEntry) break;
+      streak++;
+    }
+    return streak;
+  }, [moodEntries]);
+
+  // 28-day mood heatmap
+  const heatmap = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Array.from({ length: 28 }, (_, i) => {
+      const d = subDays(today, 27 - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const entry = moodEntries.find((e) => e.timestamp.startsWith(dateStr));
+      return { date: d, mood: entry?.mood ?? null };
+    });
+  }, [moodEntries]);
+
+  const trendLabel =
+    trend === "up"
+      ? "📈 You've been feeling better recently"
+      : trend === "down"
+        ? "📉 You've had some tough days lately"
+        : trend === "stable"
+          ? "➡️ Your mood has been steady"
+          : null;
+
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-28">
       <header className="relative overflow-hidden bg-[#d8e8cc] px-4 pb-8 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <div
           className="pointer-events-none absolute inset-0 opacity-40"
           style={{
-            backgroundImage: "radial-gradient(circle, rgba(107,143,71,0.35) 1px, transparent 1px)",
+            backgroundImage:
+              "radial-gradient(circle, rgba(107,143,71,0.35) 1px, transparent 1px)",
             backgroundSize: "14px 14px",
           }}
         />
@@ -63,14 +109,6 @@ export function MindoraScoreScreen() {
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
-          <button
-            type="button"
-            onClick={() => setFilterOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/50 text-[var(--color-primary)]"
-            aria-label="Filter"
-          >
-            <SlidersHorizontal className="h-5 w-5" />
-          </button>
         </div>
         <div className="relative mt-6 flex flex-col items-center">
           <span className="text-6xl font-bold tabular-nums text-white drop-shadow-sm">{score}</span>
@@ -79,54 +117,96 @@ export function MindoraScoreScreen() {
       </header>
 
       <div className="-mt-4 space-y-4 rounded-t-[var(--radius-xl)] bg-[#FAF8F4] px-4 pb-6 pt-5">
-        <section>
-          <h2 className="mb-2 text-sm font-bold text-[var(--color-primary)]">Score history</h2>
-          <ul className="space-y-2 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-sm)]">
-            {HISTORY.map((row) => (
-              <li
-                key={row.date}
-                className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] px-3 py-2.5 hover:bg-[var(--color-bg-secondary)]"
-              >
-                <div>
-                  <p className="text-xs font-semibold text-[var(--color-text-muted)]">{row.date}</p>
-                  <p className="text-sm text-[var(--color-text-primary)]">{row.label}</p>
-                </div>
-                <MindoraScoreBadge score={row.score} size={48} stroke={4} />
-              </li>
-            ))}
-          </ul>
-        </section>
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard
+            icon={<Flame className="h-5 w-5 text-orange-500" />}
+            value={`${moodStreak}d`}
+            label="Check-in streak"
+          />
+          <StatCard
+            icon={<BookOpen className="h-5 w-5 text-[var(--color-text-secondary)]" strokeWidth={1.75} />}
+            value={`${journalStreak}d`}
+            label="Journal streak"
+          />
+          <StatCard
+            icon={<Smile className="h-5 w-5 text-[var(--color-text-secondary)]" strokeWidth={1.75} />}
+            value={avgMood ?? "–"}
+            label="Avg mood (7d)"
+          />
+        </div>
 
+        {/* Trend */}
+        {trendLabel && (
+          <div className="rounded-[var(--radius-lg)] bg-[var(--color-accent-green-light)] px-4 py-3">
+            <p className="text-sm font-semibold text-[var(--color-accent-green)]">{trendLabel}</p>
+          </div>
+        )}
+
+        {/* 28-day mood heatmap */}
         <section>
-          <h2 className="mb-2 text-sm font-bold text-[var(--color-primary)]">Weekly outlook</h2>
-          <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-sm)]">
-            <div className="flex h-36 items-end justify-between gap-1.5 px-1">
-              {BAR_WEEKS.map((w, i) => (
-                <div key={i} className="flex flex-1 flex-col items-center justify-end gap-0.5">
-                  <div
-                    className="w-full max-w-[14px] rounded-t-md bg-[var(--color-success)]"
-                    style={{ height: `${w.pos * 100}%` }}
-                  />
-                  <div
-                    className="w-full max-w-[14px] rounded-b-md bg-[var(--color-accent-orange)]"
-                    style={{ height: `${w.neg * 100}%` }}
-                  />
-                </div>
+          <h2 className="mb-2 text-sm font-bold text-[var(--color-primary)]">
+            Mood Calendar (28 days)
+          </h2>
+          <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-sm)]">
+            <div className="grid grid-cols-7 gap-1">
+              {heatmap.map(({ date, mood }, i) => (
+                <div
+                  key={i}
+                  title={`${format(date, "MMM d")}${mood ? ` — ${mood}` : ""}`}
+                  className={cn(
+                    "aspect-square rounded-sm",
+                    mood ? MOOD_COLOR[mood] : "bg-[var(--color-border)]",
+                  )}
+                />
               ))}
             </div>
-            <p className="mt-2 text-center text-[10px] text-[var(--color-text-muted)]">
-              Green = positive · Orange = challenging days
-            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(Object.entries(MOOD_COLOR) as [MoodKey, string][]).map(([m, c]) => (
+                <span key={m} className="flex items-center gap-1">
+                  <span className={cn("h-2.5 w-2.5 rounded-sm", c)} />
+                  <span className="text-[10px] capitalize text-[var(--color-text-muted)]">{m}</span>
+                </span>
+              ))}
+            </div>
           </div>
         </section>
 
+        {/* Recent mood entries */}
         <section>
-          <h2 className="mb-2 text-sm font-bold text-[var(--color-primary)]">Mood history</h2>
-          <div className="flex justify-between gap-1 overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3 shadow-[var(--shadow-sm)]">
-            {MOOD_ROW.map((m, i) => (
-              <MoodEmoji key={i} mood={m} size={36} />
-            ))}
-          </div>
+          <h2 className="mb-2 text-sm font-bold text-[var(--color-primary)]">Recent moods</h2>
+          {recentMoods.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-8 text-center">
+              <p className="text-sm text-[var(--color-text-muted)]">No mood entries yet.</p>
+              <Button
+                type="button"
+                className="rounded-full"
+                onClick={() => navigate("/mood/set")}
+              >
+                Log your first mood
+              </Button>
+            </div>
+          ) : (
+            <ul className="space-y-2 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-sm)]">
+              {recentMoods.map((entry) => (
+                <li
+                  key={entry.id}
+                  className="flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5"
+                >
+                  <MoodEmoji mood={entry.mood} size={32} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      {format(new Date(entry.timestamp), "EEE, MMM d · h:mm a")}
+                    </p>
+                    <p className="text-sm capitalize text-[var(--color-text-primary)]">
+                      {entry.mood}
+                    </p>
+                  </div>
+                  <MindoraScoreBadge score={MOOD_SCORE[entry.mood] * 20} size={36} stroke={3} />
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <Button
@@ -135,52 +215,27 @@ export function MindoraScoreScreen() {
           className="rounded-full"
           onClick={() => navigate("/mindora-score/suggestions")}
         >
-          Swipe for AI suggestions ⌄⌄
+          Get AI Suggestions
         </Button>
       </div>
-
-      <Sheet open={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Mindora Score">
-        <div className="space-y-4">
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
-            From
-            <input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="mt-1 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
-            />
-          </label>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
-            To
-            <input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="mt-1 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
-            />
-          </label>
-          <div>
-            <p className="text-sm font-medium text-[var(--color-text-secondary)]">Score range (max {range})</p>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={range}
-              onChange={(e) => setRange(Number(e.target.value))}
-              className="mt-2 w-full accent-[var(--color-primary)]"
-            />
-          </div>
-          <Toggle
-            label="Include AI Suggestions"
-            checked={includeAi}
-            onChange={(e) => setIncludeAi(e.target.checked)}
-          />
-          <Button type="button" fullWidth className="rounded-full" onClick={() => setFilterOpen(false)}>
-            Filter Mindora Score (15)
-          </Button>
-        </div>
-      </Sheet>
     </div>
   );
 }
 
+function StatCard({
+  icon,
+  value,
+  label,
+}: {
+  icon: React.ReactNode;
+  value: string;
+  label: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-center shadow-[var(--shadow-sm)]">
+      {icon}
+      <p className="text-lg font-bold text-[var(--color-primary)]">{value}</p>
+      <p className="text-[10px] text-[var(--color-text-muted)]">{label}</p>
+    </div>
+  );
+}

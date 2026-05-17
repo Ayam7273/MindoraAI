@@ -43,7 +43,8 @@ export function StressLevelScreen() {
         </div>
       </div>
 
-      <div className="-mt-4 space-y-4 px-4 pb-6 pt-4">
+      <div className="-mt-4 space-y-4 px-4 pb-6 pt-4 lg:grid lg:grid-cols-[1fr_380px] lg:gap-8 lg:px-8 lg:pt-6 lg:space-y-0">
+        {/* Right column on desktop: stats/history */}
         <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-sm)]">
           <h2 className="text-sm font-bold text-[var(--color-primary)]">Stress Stats</h2>
           <div className="mt-4 grid grid-cols-2 gap-4">
@@ -68,12 +69,15 @@ export function StressLevelScreen() {
           </div>
         </section>
 
-        <Button type="button" fullWidth className="rounded-full" onClick={() => navigate("/stress/log")}>
-          Log stress →
-        </Button>
-        <Button type="button" fullWidth variant="secondary" className="rounded-full" onClick={() => navigate("/stress/stats")}>
-          View bubble stats
-        </Button>
+        {/* Left column on desktop: log + stats buttons */}
+        <div className="space-y-4 lg:order-first">
+          <Button type="button" fullWidth className="rounded-full" onClick={() => navigate("/stress/log")}>
+            Log stress →
+          </Button>
+          <Button type="button" fullWidth variant="secondary" className="rounded-full" onClick={() => navigate("/stress/stats")}>
+            View bubble stats
+          </Button>
+        </div>
       </div>
     </div>
   );

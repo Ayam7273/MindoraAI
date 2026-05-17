@@ -24,7 +24,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setSession = useUiStore((s) => s.setSession);
   const setUser = useUiStore((s) => s.setUser);
   const setSessionReady = useUiStore((s) => s.setSessionReady);
-  const setDarkMode = useUiStore((s) => s.setDarkMode);
   const userId = useUiStore((s) => s.user?.id);
 
   useEffect(() => {
@@ -47,11 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
     return () => subscription?.unsubscribe();
   }, [qc, setSession, setSessionReady, setUser]);
-
-  const profileDark = useUiStore((s) => s.profile?.dark_mode);
-  useEffect(() => {
-    if (profileDark != null) setDarkMode(Boolean(profileDark));
-  }, [profileDark, setDarkMode]);
 
   return (
     <>

@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "@/components/ui/TopBar";
@@ -39,7 +40,9 @@ export function MoodAISuggestionsScreen() {
   if (done) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center bg-[#2a1f14] px-6 text-center text-white">
-        <div className="text-6xl">🎉</div>
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/10">
+        <Sparkles className="h-10 w-10 text-white" strokeWidth={1.5} />
+      </div>
         <h1 className="mt-6 text-xl font-bold">Mood Suggestion Resolved!</h1>
         <p className="mt-3 text-sm text-white/75">+3 Mindora Score received.</p>
         <p className="mt-1 text-sm text-white/75">Your score is now about {nextScore}.</p>
@@ -51,7 +54,7 @@ export function MoodAISuggestionsScreen() {
             navigate("/mood", { replace: true });
           }}
         >
-          Great Thanks! ✓
+          Great, Thanks!
         </Button>
       </div>
     );
@@ -79,7 +82,7 @@ export function MoodAISuggestionsScreen() {
           </Card>
         ))}
         <Button type="button" fullWidth className="rounded-full bg-[var(--color-success)] text-white" onClick={() => setDone(true)}>
-          Mark As Resolved ✓
+          Mark As Resolved
         </Button>
       </div>
     </div>

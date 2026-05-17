@@ -1,4 +1,4 @@
-export function applyDataTheme(dark: boolean) {
+export function applyDataTheme(_dark: boolean) {
   if (typeof document === "undefined") return;
-  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  document.documentElement.setAttribute("data-theme", "light");
 }

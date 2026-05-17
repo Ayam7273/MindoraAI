@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export function CommunityWelcomeScreen() {
@@ -6,7 +7,7 @@ export function CommunityWelcomeScreen() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-[#FAF8F4] px-6 pb-28 text-center">
-      <div className="text-7xl">💚</div>
+      <div className="flex justify-center"><Heart className="h-16 w-16 text-[var(--color-accent-green)]" strokeWidth={1.5} /></div>
       <h1 className="mt-6 text-2xl font-bold text-[var(--color-primary)]">Welcome to Our Community!</h1>
       <p className="mt-3 max-w-xs text-sm leading-relaxed text-[var(--color-text-secondary)]">
         A place of warmth and acceptance, where everyone&apos;s voice is valued.

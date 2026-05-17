@@ -1,4 +1,4 @@
-import { ChevronLeft } from "lucide-react";
+﻿import { ChevronLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
@@ -120,7 +120,7 @@ export function PersonalInfoScreen() {
           navigate(-1);
         }}
       >
-        Save Settings ✓
+        Save Settings
       </Button>
     </div>
   );

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Toggle } from "@/components/ui/Toggle";
 import { cn } from "@/lib/utils";
+import { createConversation } from "@/lib/chatStorage";
 
 const AVATARS = ["👨‍⚕️", "👩‍⚕️", "🧑‍🔬", "🤖", "🦉", "🧘"];
 const SOURCES = ["mindora.ai", "web", "medic", "journals"];
@@ -105,7 +106,11 @@ export function NewConversationScreen() {
         type="button"
         fullWidth
         className="mt-8 rounded-full"
-        onClick={() => navigate(`/chatbot/${Date.now()}`)}
+        onClick={() => {
+          const title = name.trim() || "New conversation";
+          const convo = createConversation(title);
+          navigate(`/chatbot/${convo.id}`, { replace: true });
+        }}
       >
         Create Conversation →
       </Button>

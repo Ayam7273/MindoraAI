@@ -14,17 +14,17 @@ const COURSES = [
 export function ResourcesScreen() {
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-28">
-      <header className="rounded-b-3xl bg-[#3B2A1A] px-4 pb-6 pt-[max(0.5rem,env(safe-area-inset-top))] text-[#FAF8F4]">
+      <header className="rounded-b-3xl bg-[#3B2A1A] px-4 pb-6 pt-[max(0.5rem,env(safe-area-inset-top))] text-[#FAF8F4] lg:rounded-none lg:px-8">
         <h1 className="text-xl font-bold">Our Resources</h1>
         <p className="mt-1 text-sm text-white/70">
           <span className="font-semibold text-white">1.8k</span> Articles · <span className="font-semibold text-white">512</span> Courses
         </p>
       </header>
 
-      <div className="-mt-4 space-y-6 px-4">
-        <Link to="/resources/article/featured" className="block overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-[var(--color-border)]">
-          <div className="h-36 bg-gradient-to-br from-amber-100 to-orange-200" />
-          <div className="p-4">
+      <div className="-mt-4 space-y-6 px-4 lg:px-8 lg:pt-6 lg:mt-0 lg:space-y-8">
+        <Link to="/resources/article/featured" className="block overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-[var(--color-border)] lg:flex lg:h-48">
+          <div className="h-36 bg-gradient-to-br from-amber-100 to-orange-200 lg:h-full lg:w-64 lg:shrink-0" />
+          <div className="p-4 lg:flex lg:flex-col lg:justify-center">
             <p className="text-xs font-bold uppercase text-[var(--color-accent-green)]">Featured</p>
             <p className="mt-1 text-base font-bold text-[#3B2A1A]">Mindora AI: Your Pocket Companion for Mental Wellness</p>
             <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-accent-orange)]">
@@ -40,14 +40,14 @@ export function ResourcesScreen() {
               See all
             </Link>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="flex gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-3 lg:overflow-x-visible lg:pb-0">
             {ARTICLES.map((a) => (
               <Link
                 key={a.id}
                 to={`/resources/article/${a.id}`}
-                className="min-w-[10rem] max-w-[10rem] shrink-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[var(--color-border)]"
+                className="min-w-[10rem] max-w-[10rem] shrink-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[var(--color-border)] lg:min-w-0 lg:max-w-none lg:shrink"
               >
-                <div className="h-24 bg-gradient-to-br from-green-50 to-emerald-100" />
+                <div className="h-24 bg-gradient-to-br from-green-50 to-emerald-100 lg:h-32" />
                 <div className="p-2">
                   <span className="text-[10px] font-bold text-[var(--color-accent-green)]">{a.cat}</span>
                   <p className="mt-1 line-clamp-2 text-xs font-semibold text-[#3B2A1A]">{a.title}</p>
@@ -64,7 +64,7 @@ export function ResourcesScreen() {
               See all
             </Link>
           </div>
-          <ul className="space-y-2">
+          <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
             {COURSES.map((c) => (
               <li key={c.id}>
                 <Link to={`/resources/course/${c.id}`} className="flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-3">

@@ -42,7 +42,7 @@ export function LiveChatChatScreen() {
       </div>
 
       <div className="border-t border-[var(--color-border)] bg-white px-3 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <p className="mb-2 text-center text-[11px] font-semibold text-[var(--color-text-muted)]">Chat with our specialist 🤖</p>
+        <p className="mb-2 text-center text-[11px] font-semibold text-[var(--color-text-muted)]">Chat with our specialist</p>
         <div className="flex items-center gap-2 rounded-2xl bg-[var(--color-bg-secondary)] px-2 py-2">
           <button type="button" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white" aria-label="Attach">
             <Paperclip className="h-4 w-4" />

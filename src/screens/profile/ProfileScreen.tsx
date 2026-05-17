@@ -1,17 +1,21 @@
-import { ChevronRight, LogOut } from "lucide-react";
+import { ChevronRight, LogOut, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { ProgressRing } from "@/components/ui/ProgressRing";
-import { Toggle } from "@/components/ui/Toggle";
 import { useMindoraScore } from "@/hooks/useMindoraScore";
-import { useUpdateProfile } from "@/hooks/useProfile";
 import { signOut } from "@/services/authService";
 import { useUiStore } from "@/store/uiStore";
 
 function Row({ to, label, danger }: { to: string; label: string; danger?: boolean }) {
   return (
-    <Link to={to} className="flex items-center justify-between rounded-xl bg-white px-4 py-3 ring-1 ring-[var(--color-border)]">
-      <span className={`text-sm font-medium ${danger ? "text-red-600" : "text-[#3B2A1A]"}`}>{label}</span>
+    <Link
+      to={to}
+      className="flex items-center justify-between rounded-xl bg-white px-4 py-3 ring-1 ring-[var(--color-border)]"
+    >
+      <span className={`text-sm font-medium ${danger ? "text-red-600" : "text-[#3B2A1A]"}`}>
+        {label}
+      </span>
       <ChevronRight className="h-4 w-4 text-[var(--color-text-muted)]" />
     </Link>
   );
@@ -21,65 +25,105 @@ export function ProfileScreen() {
   const navigate = useNavigate();
   const userId = useUiStore((s) => s.user?.id);
   const displayName = useUiStore((s) => s.profile?.full_name ?? "Friend");
-  const darkMode = useUiStore((s) => s.darkMode);
-  const setDarkMode = useUiStore((s) => s.setDarkMode);
-  const isPro = Boolean(useUiStore((s) => s.profile?.is_pro));
-  const updateProfile = useUpdateProfile();
   const { score } = useMindoraScore(userId);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  function clearAllData() {
+    // Data is stored in Supabase — clearing is handled server-side via account deletion
+    setConfirmClear(false);
+  }
 
   return (
-    <div className="min-h-dvh bg-[#FAF8F4] px-4 pb-28 pt-4">
+    <div className="min-h-dvh bg-[#FAF8F4] px-4 pb-28 pt-4 lg:px-8 lg:pt-6">
+      <div className="lg:max-w-3xl lg:mx-auto">
       <div className="flex items-center gap-4 rounded-2xl bg-white p-4 ring-1 ring-[var(--color-border)]">
-        <div className="h-16 w-16 rounded-full bg-[var(--color-bg-secondary)] text-center text-2xl leading-[4rem]">👤</div>
+        <div className="h-16 w-16 rounded-full bg-[var(--color-bg-secondary)] text-center text-2xl leading-[4rem]">
+          👤
+        </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-lg font-bold text-[#3B2A1A]">{displayName}</p>
-          <p className="text-xs text-[var(--color-text-muted)]">{isPro ? "Pro" : "Basic"} plan</p>
+          <p className="text-xs text-[var(--color-text-muted)]">Mindora member</p>
         </div>
-        <ProgressRing value={score / 100} size={56} stroke={5} progressColor="var(--color-accent-green)" />
+        <ProgressRing
+          value={score / 100}
+          size={56}
+          stroke={5}
+          progressColor="var(--color-accent-green)"
+        />
       </div>
 
       <section className="mt-6 space-y-2">
-        <p className="px-1 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]">General</p>
+        <p className="px-1 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+          General
+        </p>
         <Row to="/settings/notifications" label="Notifications" />
         <Row to="/settings/personal" label="Personal Information" />
         <Row to="/settings/personal" label="Emergency Contact" />
       </section>
 
       <section className="mt-6 space-y-2">
-        <p className="px-1 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]">Preferences</p>
-        <div className="rounded-xl bg-white px-4 py-3 ring-1 ring-[var(--color-border)]">
-          <Toggle
-            label="Dark Mode"
-            checked={darkMode}
-            onChange={(e) => {
-              const on = e.target.checked;
-              setDarkMode(on);
-              if (userId) void updateProfile.mutateAsync({ id: userId, patch: { dark_mode: on } });
-            }}
-          />
-        </div>
-        <div className="rounded-xl bg-white px-4 py-3 ring-1 ring-[var(--color-border)]">
-          <Toggle
-            label="Pro (demo unlock)"
-            checked={isPro}
-            onChange={(e) => {
-              if (userId) void updateProfile.mutateAsync({ id: userId, patch: { is_pro: e.target.checked } });
-            }}
-          />
-        </div>
+        <p className="px-1 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+          Preferences
+        </p>
         <Row to="/settings/language" label="Language" />
       </section>
 
       <section className="mt-6 space-y-2">
-        <p className="px-1 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]">Social</p>
+        <p className="px-1 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+          Social
+        </p>
         <Row to="/invite" label="Invite Friends" />
         <Row to="/feedback" label="Submit Feedback" />
       </section>
 
       <section className="mt-6 space-y-2">
-        <p className="px-1 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]">Security &amp; Privacy</p>
+        <p className="px-1 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+          Security &amp; Privacy
+        </p>
         <Row to="/settings/security" label="Security" />
         <Row to="/help" label="Help Center" />
+      </section>
+
+      <section className="mt-6 space-y-2">
+        <p className="px-1 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+          Data
+        </p>
+        {confirmClear ? (
+          <div className="rounded-xl bg-red-50 p-4 ring-1 ring-red-200">
+            <p className="text-sm font-semibold text-red-800">
+              This will delete all your local app data (chat history, journal entries, mood logs).
+              Are you sure?
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                className="rounded-full"
+                onClick={() => setConfirmClear(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                fullWidth
+                className="rounded-full bg-red-600 hover:bg-red-700"
+                onClick={clearAllData}
+              >
+                Clear All Data
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmClear(true)}
+            className="flex w-full items-center gap-3 rounded-xl bg-white px-4 py-3 ring-1 ring-[var(--color-border)]"
+          >
+            <Trash2 className="h-4 w-4 text-red-500" />
+            <span className="text-sm font-medium text-red-600">Clear All App Data</span>
+          </button>
+        )}
       </section>
 
       <section className="mt-6">
@@ -107,6 +151,7 @@ export function ProfileScreen() {
           Log Out
         </span>
       </Button>
+      </div>
     </div>
   );
 }

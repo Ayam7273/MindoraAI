@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ChevronLeft, Video } from "lucide-react";
+﻿import { useState } from "react";
+import { ChevronLeft, Leaf, Video } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -55,13 +55,15 @@ export function StressLogScreen() {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center bg-black/50 px-4">
         <Card className="w-full max-w-sm p-6 text-center shadow-xl">
-          <div className="text-4xl">🧘</div>
+          <div className="flex justify-center">
+            <Leaf className="h-10 w-10 text-[var(--color-accent-green)]" strokeWidth={1.5} />
+          </div>
           <h2 className="mt-4 text-lg font-bold text-[var(--color-primary)]">Stress Level Set to {level}</h2>
           <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
             Logged to your journal and shared with Mindora AI (demo).
           </p>
           <Button type="button" fullWidth className="mt-6 rounded-full" onClick={() => navigate("/stress")}>
-            Got it, thanks! ✓
+            Got it, thanks!
           </Button>
         </Card>
       </div>
