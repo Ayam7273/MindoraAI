@@ -85,7 +85,7 @@ export function JournalDetailScreen() {
           {format(new Date(entry.timestamp), "EEEE, MMMM d, yyyy · h:mm a")}
         </p>
 
-        <article className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 text-sm leading-relaxed text-[var(--color-text-primary)] shadow-[var(--shadow-sm)]">
+        <article className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 text-sm leading-relaxed text-[var(--color-text-primary)] shadow-[var(--shadow-sm)] journal-detail-content">
           <p className="whitespace-pre-wrap break-words">{entry.body}</p>
         </article>
 

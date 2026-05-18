@@ -58,9 +58,9 @@ export function JournalListScreen() {
           </Button>
         </div>
       ) : (
-        <ul className="space-y-3 px-3 sm:px-4 pt-4 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0 lg:px-8">
+        <ul className="space-y-3 px-3 sm:px-4 pt-4 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0 lg:px-8 journal-list journal-list-grid">
           {entries.map((entry) => (
-            <li key={entry.id} className="overflow-hidden rounded-[var(--radius-xl)] bg-white ring-1 ring-[var(--color-border)]">
+            <li key={entry.id} className="overflow-hidden rounded-[var(--radius-xl)] bg-white ring-1 ring-[var(--color-border)] journal-list-entry">
               <button
                 type="button"
                 className="flex w-full items-start gap-3 p-4 text-left"

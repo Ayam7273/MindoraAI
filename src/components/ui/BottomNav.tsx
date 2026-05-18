@@ -26,7 +26,8 @@ export function BottomNav() {
       return;
     }
     if (location.pathname.startsWith("/community")) {
-      navigate("/community/new-post");
+      // FAB on community opens compose via feed page state — just navigate to feed
+      navigate("/community/feed");
       return;
     }
     navigate("/mood/set");

@@ -12,7 +12,7 @@ export function CommunityWelcomeScreen() {
       <p className="mt-3 max-w-xs text-sm leading-relaxed text-[var(--color-text-secondary)]">
         A place of warmth and acceptance, where everyone&apos;s voice is valued.
       </p>
-      <Button type="button" className="mt-10 w-full max-w-xs rounded-full" onClick={() => navigate("/community")}>
+      <Button type="button" className="mt-10 w-full max-w-xs rounded-full" onClick={() => navigate("/community/feed")}>
         Start Posting →
       </Button>
       <div className="mt-6 flex flex-col gap-2 text-xs text-[var(--color-text-muted)]">

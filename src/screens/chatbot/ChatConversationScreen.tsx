@@ -120,7 +120,7 @@ export function ChatConversationScreen() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#FAF8F4]">
-      <header className="flex items-center gap-2 border-b border-[var(--color-border)] bg-white px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+      <header className="flex items-center gap-2 border-b border-[var(--color-border)] bg-white px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] chat-conversation-header">
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -172,7 +172,7 @@ export function ChatConversationScreen() {
             ) : null}
             <div
               className={cn(
-                "max-w-[82%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
+                "max-w-[82%] rounded-2xl px-3 py-2 text-sm leading-relaxed chat-bubble",
                 msg.role === "user"
                   ? "rounded-br-md bg-[#3B2A1A] text-[#FAF8F4]"
                   : "rounded-bl-md bg-white ring-1 ring-[var(--color-border)]",
@@ -190,7 +190,7 @@ export function ChatConversationScreen() {
         ))}
       </div>
 
-      <div className="border-t border-[var(--color-border)] bg-white px-3 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="border-t border-[var(--color-border)] bg-white px-3 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] chat-input-bar">
         <div className="flex items-end gap-2 rounded-2xl bg-[var(--color-bg-secondary)] px-3 py-2">
           <textarea
             ref={textareaRef}

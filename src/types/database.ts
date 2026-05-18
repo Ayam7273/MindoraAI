@@ -138,6 +138,32 @@ export interface CommunityPostRow {
   created_at: string;
 }
 
+export interface CommunityLikeRow {
+  id: string;
+  post_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface CommunityCommentRow {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+}
+
+export interface CommunityNotificationRow {
+  id: string;
+  recipient_user_id: string;
+  actor_user_id: string;
+  post_id: string;
+  type: "like" | "comment";
+  comment_preview: string | null;
+  read: boolean;
+  created_at: string;
+}
+
 export interface AssessmentResponseRow {
   id: string;
   user_id: string;

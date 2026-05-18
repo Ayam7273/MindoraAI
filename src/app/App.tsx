@@ -15,6 +15,7 @@ import { CustomAIInstructionsScreen } from "@/screens/chatbot/CustomAIInstructio
 import { NewConversationScreen } from "@/screens/chatbot/NewConversationScreen";
 import { TokenLimitScreen } from "@/screens/chatbot/TokenLimitScreen";
 import { VoiceChatScreen } from "@/screens/chatbot/VoiceChatScreen";
+import { CommunityEntryGuard } from "@/screens/community/CommunityEntryGuard";
 import { CommunityNotificationsScreen } from "@/screens/community/CommunityNotificationsScreen";
 import { CommunityScreen } from "@/screens/community/CommunityScreen";
 import { CommunityWelcomeScreen } from "@/screens/community/CommunityWelcomeScreen";
@@ -129,7 +130,8 @@ export default function App() {
             <Route path="/resources/course/:id" element={<CourseDetailScreen />} />
             <Route path="/resources/play/:courseId" element={<CoursePlayerScreen />} />
             <Route path="/resources/complete/:courseId" element={<CourseCompleteScreen />} />
-            <Route path="/community" element={<CommunityScreen />} />
+            <Route path="/community" element={<CommunityEntryGuard />} />
+            <Route path="/community/feed" element={<CommunityScreen />} />
             <Route path="/community/welcome" element={<CommunityWelcomeScreen />} />
             <Route path="/community/notifications" element={<CommunityNotificationsScreen />} />
             <Route path="/community/new-post" element={<NewPostScreen />} />

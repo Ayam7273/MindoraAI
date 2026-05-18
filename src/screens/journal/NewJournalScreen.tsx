@@ -67,7 +67,7 @@ export function NewJournalScreen() {
     <div className="min-h-dvh bg-[#FAF8F4] pb-28">
       <TopBar title="New Journal Entry" />
       <div className="space-y-4 px-3 sm:px-4 pt-6">
-        <div className="flex items-start gap-3 rounded-[var(--radius-xl)] bg-white p-4 ring-1 ring-[var(--color-border)] overflow-hidden">
+        <div className="flex items-start gap-3 rounded-[var(--radius-xl)] bg-white p-4 ring-1 ring-[var(--color-border)] overflow-hidden journal-info-card">
           <PenLine className="h-6 w-6 shrink-0 text-[var(--color-accent-green)]" />
           <div className="min-w-0 flex-1">
             <p className="font-semibold text-[var(--color-primary)]">Text Journal</p>
@@ -82,6 +82,7 @@ export function NewJournalScreen() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Feeling anxious today"
+          className="journal-title-input"
         />
 
         <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
