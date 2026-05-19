@@ -15,25 +15,29 @@ import {
 import { NavLink, useLocation } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/store/languageStore";
 import { shouldHideBottomNav } from "@/lib/navPaths";
 
-type NavItem = { to: string; icon: LucideIcon; label: string; matchPrefix?: string };
+import type { TranslationKey } from "@/lib/i18n";
+
+type NavItem = { to: string; icon: LucideIcon; key: TranslationKey; matchPrefix?: string };
 const NAV_ITEMS: NavItem[] = [
-  { to: "/home", icon: Home, label: "Home" },
-  { to: "/chatbot", icon: MessageCircle, label: "AI Chat" },
-  { to: "/mood", icon: Smile, label: "Mood" },
-  { to: "/journal", icon: BookOpen, label: "Journal" },
-  { to: "/stress", icon: Brain, label: "Stress" },
-  { to: "/sleep", icon: Moon, label: "Sleep" },
-  { to: "/mindful", icon: Wind, label: "Mindfulness" },
-  { to: "/community", icon: Users, label: "Community", matchPrefix: "/community" },
-  { to: "/resources/coping", icon: Heart, label: "Coping Toolkit" },
-  { to: "/mindora-score", icon: BarChart2, label: "Progress" },
-  { to: "/profile", icon: User, label: "Profile" },
+  { to: "/home", icon: Home, key: "nav.home" },
+  { to: "/chatbot", icon: MessageCircle, key: "nav.aiChat" },
+  { to: "/mood", icon: Smile, key: "nav.mood" },
+  { to: "/journal", icon: BookOpen, key: "nav.journal" },
+  { to: "/stress", icon: Brain, key: "nav.stress" },
+  { to: "/sleep", icon: Moon, key: "nav.sleep" },
+  { to: "/mindful", icon: Wind, key: "nav.mindfulness" },
+  { to: "/community", icon: Users, key: "nav.community", matchPrefix: "/community" },
+  { to: "/resources/coping", icon: Heart, key: "nav.copingToolkit" },
+  { to: "/mindora-score", icon: BarChart2, key: "nav.progress" },
+  { to: "/profile", icon: User, key: "nav.profile" },
 ];
 
 export function SideNav() {
   const location = useLocation();
+  const t = useT();
 
   if (shouldHideBottomNav(location.pathname)) return null;
 
@@ -50,7 +54,7 @@ export function SideNav() {
 
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-0.5 px-3">
-          {NAV_ITEMS.map(({ to, icon: Icon, label, matchPrefix }) => {
+          {NAV_ITEMS.map(({ to, icon: Icon, key, matchPrefix }) => {
             const prefixActive = matchPrefix
               ? location.pathname.startsWith(matchPrefix)
               : false;
@@ -69,7 +73,7 @@ export function SideNav() {
                   }
                 >
                   <Icon className="h-5 w-5 shrink-0" strokeWidth={1.75} />
-                  <span>{label}</span>
+                  <span>{t(key)}</span>
                 </NavLink>
               </li>
             );
@@ -79,7 +83,7 @@ export function SideNav() {
 
       <div className="border-t border-[var(--color-border)] px-5 py-4">
         <p className="text-[10px] text-[var(--color-text-muted)]">
-          Mindora is not a substitute for professional mental health care.
+          {t("misc.disclaimer")}
         </p>
       </div>
     </aside>

@@ -1,7 +1,8 @@
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
-import { Brain, Calendar, ChevronRight, Clock, Lightbulb, List, Plus, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { Brain, Calendar, ChevronRight, Clock, Lightbulb, List, Loader2, Plus, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { genAI } from "@/lib/gemini";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { MoodEmoji } from "@/components/ui/MoodEmoji";
@@ -105,6 +106,29 @@ export function MoodTrackerScreen() {
   const historyEntries = [...moodEntries].slice(0, 20);
 
   const nextScore = Math.min(100, score + 3);
+
+  // ── Gemini mood suggestion ──────────────────────────────────────────────────
+  const currentMoodKey = (moodEntries[0]?.mood ?? "neutral") as MoodKey;
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  useEffect(() => {
+    if (tab !== "suggestions" || aiSuggestion || aiLoading) return;
+    if (!genAI) return; // No API key — static steps will show instead
+
+    setAiLoading(true);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const prompt = `The user is feeling "${MOOD_LABEL[currentMoodKey]}" right now.
+Write 3 concise, warm, evidence-based suggestions to help them feel better.
+Format your response as a numbered list (1. 2. 3.) with a bold title on each line followed by one short paragraph.
+Be compassionate, practical, and avoid medical advice.`;
+
+    model
+      .generateContent(prompt)
+      .then((result) => setAiSuggestion(result.response.text()))
+      .catch(() => setAiSuggestion(null))
+      .finally(() => setAiLoading(false));
+  }, [tab, aiSuggestion, aiLoading, currentMoodKey]);
 
   return (
     <div className="relative min-h-dvh bg-[#FAF8F4]">
@@ -228,6 +252,30 @@ export function MoodTrackerScreen() {
       {/* ── AI SUGGESTIONS TAB ── */}
       {tab === "suggestions" && (
         <div className="space-y-4 px-4 pb-32 pt-2">
+
+          {/* Gemini loading state */}
+          {aiLoading && (
+            <div className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--color-border)] bg-white py-6 text-sm text-[var(--color-text-muted)]">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Generating personalised suggestions for your mood…
+            </div>
+          )}
+
+          {/* Gemini AI response */}
+          {!aiLoading && aiSuggestion && !suggestionDone && (
+            <div className="rounded-2xl border border-[var(--color-accent-green)]/30 bg-[var(--color-accent-green-light)] p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-[var(--color-accent-green)]" strokeWidth={1.75} />
+                <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-accent-green)]">
+                  Personalised by Gemini AI · Based on your {MOOD_LABEL[currentMoodKey]} mood
+                </p>
+              </div>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-text-primary)]">
+                {aiSuggestion}
+              </p>
+            </div>
+          )}
+
           {suggestionDone ? (
             <div className="flex flex-col items-center py-12 text-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-accent-green-light)]">

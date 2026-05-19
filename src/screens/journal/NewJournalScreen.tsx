@@ -1,11 +1,12 @@
 ﻿import { useState } from "react";
-import { CheckCircle, PenLine } from "lucide-react";
+import { CheckCircle, Loader2, PenLine, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { TopBar } from "@/components/ui/TopBar";
 import { addJournalEntry } from "@/lib/journalStorage";
 import { hapticSuccess } from "@/lib/haptics";
+import { genAI } from "@/lib/gemini";
 
 export function NewJournalScreen() {
   const navigate = useNavigate();
@@ -14,8 +15,10 @@ export function NewJournalScreen() {
   const [saved, setSaved] = useState(false);
   const [entryId, setEntryId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [reflection, setReflection] = useState<string | null>(null);
+  const [reflectionLoading, setReflectionLoading] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!body.trim() && !title.trim()) return;
     setSaving(true);
     const entry = addJournalEntry(title.trim() || "Journal entry", body.trim());
@@ -23,16 +26,59 @@ export function NewJournalScreen() {
     setEntryId(entry.id);
     setSaved(true);
     setSaving(false);
+
+    // §8 — Ask Gemini for an empathetic reflection on the journal entry
+    if (genAI && body.trim().length > 20) {
+      setReflectionLoading(true);
+      try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const prompt = `The following is a personal journal entry. Provide a brief, empathetic reflection that:
+- Validates the user's feelings in 1-2 sentences
+- Offers one gentle, practical insight
+- Ends with an encouraging closing sentence
+Do not give medical advice. Keep the total response to 3-4 sentences. Be warm and human.
+
+Journal entry:
+"${body.trim().slice(0, 800)}"`;
+        const result = await model.generateContent(prompt);
+        setReflection(result.response.text());
+      } catch {
+        // Gemini unavailable — skip silently
+      } finally {
+        setReflectionLoading(false);
+      }
+    }
   };
 
   if (saved && entryId) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-[#FAF8F4] px-6 text-center">
+      <div className="flex min-h-dvh flex-col items-center bg-[#FAF8F4] px-6 pb-16 pt-16 text-center">
         <CheckCircle className="h-20 w-20 text-[var(--color-accent-green)]" strokeWidth={1.5} />
         <p className="mt-6 text-2xl font-bold text-[var(--color-primary)]">Entry saved!</p>
-        <p className="mt-3 max-w-xs text-sm text-[var(--color-text-secondary)]">
-          Your journal entry has been saved to your device.
+        <p className="mt-2 max-w-xs text-sm text-[var(--color-text-secondary)]">
+          Your journal entry has been saved.
         </p>
+
+        {/* §8 — Gemini AI reflection */}
+        {reflectionLoading && (
+          <div className="mt-6 flex w-full max-w-sm items-center justify-center gap-2 rounded-2xl border border-[var(--color-border)] bg-white py-5 text-sm text-[var(--color-text-muted)]">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Mindora AI is reflecting on your entry…
+          </div>
+        )}
+
+        {reflection && !reflectionLoading && (
+          <div className="mt-6 w-full max-w-sm rounded-2xl border border-[var(--color-accent-green)]/30 bg-[var(--color-accent-green-light)] p-5 text-left">
+            <div className="mb-2 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-[var(--color-accent-green)]" strokeWidth={1.75} />
+              <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-accent-green)]">
+                Mindora AI Reflection
+              </p>
+            </div>
+            <p className="text-sm leading-relaxed text-[var(--color-text-primary)]">{reflection}</p>
+          </div>
+        )}
+
         <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
           <Button
             type="button"
@@ -101,7 +147,7 @@ export function NewJournalScreen() {
           type="button"
           fullWidth
           className="rounded-full"
-          onClick={handleSave}
+          onClick={() => void handleSave()}
           disabled={(!body.trim() && !title.trim()) || saving}
         >
           Save Entry

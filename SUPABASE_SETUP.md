@@ -1,149 +1,199 @@
-# Supabase Setup (Mindora)
+# Mindora — Supabase Database Setup
 
-This project uses **Supabase Auth** + **Supabase Postgres** for persistence, with **React Query** for server state and a small Zustand `uiStore` for ephemeral UI state (no localStorage persistence).
+Run these queries in the **Supabase SQL Editor** (`Project → SQL Editor → New query`).
 
-## 1) Create a Supabase project
+---
 
-- Create a project in the Supabase dashboard.
-- Wait until the database is ready.
+## Existing Tables (already in your schema)
 
-## 2) Get your Supabase URL + anon key
+These are referenced by the app and should already exist:
+`profiles`, `mood_entries`, `journal_entries`, `stress_entries`, `sleep_entries`,
+`sleep_schedules`, `mindful_sessions`, `chatbot_conversations`, `chatbot_messages`,
+`mindora_score_history`, `community_posts`, `assessment_responses`
 
-In Supabase dashboard:
-- **Project Settings → API**
-  - Copy **Project URL** → `VITE_SUPABASE_URL`
-  - Copy **anon public** key → `VITE_SUPABASE_ANON_KEY`
+---
 
-## 3) Configure local environment variables
+## 1 — Community Posts: add missing columns
 
-In your repo root, set these in `.env` (or `.env.local`):
+If `community_posts` does not yet have `likes_count` or `comments_count`, add them first:
 
-```env
-VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-VITE_SUPABASE_ANON_KEY=your_anon_key
+```sql
+alter table public.community_posts
+  add column if not exists likes_count    integer not null default 0,
+  add column if not exists comments_count integer not null default 0;
 ```
 
-Notes:
-- These are read by Vite via `import.meta.env`.
-- Restart `npm run dev` after changing env vars.
+---
 
-## 4) Run the database schema + RLS policies
+## 2 — Community Likes Table
 
-This repo includes the migration SQL:
-- `supabase/migrations/001_initial_schema.sql`
+Stores which users have liked which posts (one like per user per post).
 
-In Supabase dashboard:
-- **SQL Editor → New query**
-- Paste the contents of `supabase/migrations/001_initial_schema.sql`
-- Run it.
+```sql
+-- Create table
+create table if not exists public.community_likes (
+  id         uuid        primary key default gen_random_uuid(),
+  post_id    uuid        not null references public.community_posts(id) on delete cascade,
+  user_id    uuid        not null references auth.users(id)             on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (post_id, user_id)   -- prevents duplicate likes
+);
 
-### Verify tables exist
+-- Enable Row-Level Security
+alter table public.community_likes enable row level security;
 
-In Supabase dashboard:
-- **Database → Tables**
-- Confirm you see tables like:
-  - `profiles`
-  - `mood_entries`
-  - `journal_entries`
-  - `stress_entries`
-  - `sleep_entries`
-  - `sleep_schedules`
-  - `mindful_sessions`
-  - `chatbot_conversations`
-  - `chatbot_messages`
-  - `mindora_score_history`
-  - `community_posts`
-  - `assessment_responses`
+-- Any authenticated user can read likes (needed to check if they already liked)
+create policy "Authenticated users can read likes"
+  on public.community_likes for select
+  using (auth.role() = 'authenticated');
 
-### Verify RLS is enabled
+-- Users can only insert their own like
+create policy "Users can like posts"
+  on public.community_likes for insert
+  with check (auth.uid() = user_id);
 
-In Supabase dashboard:
-- **Database → Tables → (pick a table) → RLS**
-- Ensure **RLS is enabled** on all tables (the migration does this).
+-- Users can only delete their own like (unlike)
+create policy "Users can unlike posts"
+  on public.community_likes for delete
+  using (auth.uid() = user_id);
 
-## 5) Configure Auth
+-- Indexes for fast lookups
+create index if not exists community_likes_post_id_idx on public.community_likes (post_id);
+create index if not exists community_likes_user_id_idx on public.community_likes (user_id);
 
-Open Supabase dashboard:
-- **Authentication → Providers**
+-- RPC: increment likes_count when a like is added
+create or replace function public.increment_post_likes(pid uuid)
+returns void language sql security definer as $$
+  update public.community_posts
+  set likes_count = coalesce(likes_count, 0) + 1
+  where id = pid;
+$$;
 
-### Email/password
-
-- Enable **Email** provider (default).
-- Decide whether **Confirm email** is required:
-  - If enabled, users must confirm via email before they can sign in.
-
-### Google OAuth
-
-If you want the “Continue with Google” button to work:
-- Enable **Google** provider
-- Add your Google **Client ID** and **Client Secret**
-
-#### Redirect URLs (important)
-
-Set these in Supabase:
-- **Authentication → URL Configuration**
-  - **Site URL**:
-    - Local dev (Vite default): `http://localhost:5173`
-    - If you changed ports, use your actual dev URL.
-  - **Redirect URLs** (add both):
-    - `http://localhost:5173`
-    - `http://localhost:5173/#/` (HashRouter support)
-
-If you deploy later, add your production domain(s) too.
-
-## 6) Confirm the app is wired to Supabase
-
-Key files:
-- **Client**: `src/lib/supabase.ts`
-- **Auth**: `src/services/authService.ts`
-- **Session + profile sync**: `src/providers/AuthProvider.tsx`
-- **UI store (no persistence)**: `src/store/uiStore.ts`
-- **Data hooks (React Query)**: `src/hooks/*`
-
-Expected behavior:
-- Visiting protected routes without a session redirects to `/signin`.
-- After signing in, `AuthProvider` syncs:
-  - `session` + `user` (from Supabase auth)
-  - `profile` (from `public.profiles`)
-- The migration includes a trigger that **auto-creates `public.profiles`** when a user is created in `auth.users`.
-
-## 7) Quick local test checklist
-
-1. Run the app:
-
-```bash
-npm run dev
+-- RPC: decrement likes_count when a like is removed (floors at 0)
+create or replace function public.decrement_post_likes(pid uuid)
+returns void language sql security definer as $$
+  update public.community_posts
+  set likes_count = greatest(coalesce(likes_count, 0) - 1, 0)
+  where id = pid;
+$$;
 ```
 
-2. Open the app and:
-- Go to **Sign Up** and create a user
-- Then **Sign In**
-- Complete **Assessment** and **Profile Setup**
-- Toggle **Dark Mode** in Profile (should update `profiles.dark_mode`)
+---
 
-## 8) Common issues & fixes
+## 3 — Community Comments Table
 
-### “Invalid API key” / “Failed to fetch”
-- Ensure `.env` values are correct.
-- Restart `npm run dev`.
-- Make sure the Supabase project is not paused.
+Stores all comments on community posts, ordered oldest-first.
 
-### Google sign-in opens but doesn’t return to the app
-- Add correct **Redirect URLs** in Supabase Auth settings:
-  - `http://localhost:5173`
-  - `http://localhost:5173/#/`
+```sql
+-- Create table
+create table if not exists public.community_comments (
+  id         uuid        primary key default gen_random_uuid(),
+  post_id    uuid        not null references public.community_posts(id) on delete cascade,
+  user_id    uuid        not null references auth.users(id)             on delete cascade,
+  content    text        not null check (char_length(content) between 1 and 1000),
+  created_at timestamptz not null default now()
+);
 
-### Profile is null after login
-- Confirm you ran `supabase/migrations/001_initial_schema.sql`.
-- Confirm the `handle_new_user` trigger exists.
-- In Supabase, check **Authentication → Users**: user exists
-- In **Database → Table Editor → profiles**: a row exists with the same UUID.
+-- Enable Row-Level Security
+alter table public.community_comments enable row level security;
 
-### Permission/RLS errors when inserting/selecting
-- Confirm **RLS policies** were created (migration section “RLS Policies”).
-- Confirm you are logged in (no session → `auth.uid()` is null → RLS blocks access).
+-- Any authenticated user can read comments
+create policy "Authenticated users can read comments"
+  on public.community_comments for select
+  using (auth.role() = 'authenticated');
 
-## 9) Optional (recommended): don’t commit secrets
+-- Users can only insert their own comments
+create policy "Users can add comments"
+  on public.community_comments for insert
+  with check (auth.uid() = user_id);
 
-Keep `.env` out of git commits. If you need, create `.env.example` with placeholders instead.
+-- Users can only delete their own comments
+create policy "Users can delete own comments"
+  on public.community_comments for delete
+  using (auth.uid() = user_id);
 
+-- Indexes
+create index if not exists community_comments_post_id_idx on public.community_comments (post_id, created_at asc);
+create index if not exists community_comments_user_id_idx on public.community_comments (user_id);
+
+-- RPC: increment comments_count when a comment is added
+create or replace function public.increment_post_comments(pid uuid)
+returns void language sql security definer as $$
+  update public.community_posts
+  set comments_count = coalesce(comments_count, 0) + 1
+  where id = pid;
+$$;
+
+-- RPC: decrement comments_count when a comment is deleted
+create or replace function public.decrement_post_comments(pid uuid)
+returns void language sql security definer as $$
+  update public.community_posts
+  set comments_count = greatest(coalesce(comments_count, 0) - 1, 0)
+  where id = pid;
+$$;
+```
+
+---
+
+## 4 — Community Notifications Table (optional — for server-side persistence)
+
+Currently notifications live in the client-side Zustand store (lost on page refresh).
+Run this to persist them in Supabase instead:
+
+```sql
+create table if not exists public.community_notifications (
+  id                uuid        primary key default gen_random_uuid(),
+  recipient_user_id uuid        not null references auth.users(id) on delete cascade,
+  actor_user_id     uuid        not null references auth.users(id) on delete cascade,
+  post_id           uuid        not null references public.community_posts(id) on delete cascade,
+  type              text        not null check (type in ('like', 'comment')),
+  comment_preview   text,
+  read              boolean     not null default false,
+  created_at        timestamptz not null default now()
+);
+
+alter table public.community_notifications enable row level security;
+
+-- Users read only their own notifications
+create policy "Users read own notifications"
+  on public.community_notifications for select
+  using (auth.uid() = recipient_user_id);
+
+-- Any authenticated user can create a notification for another user
+create policy "Authenticated users can create notifications"
+  on public.community_notifications for insert
+  with check (auth.role() = 'authenticated');
+
+-- Users can mark their own notifications as read
+create policy "Users update own notifications"
+  on public.community_notifications for update
+  using (auth.uid() = recipient_user_id);
+
+create index if not exists community_notifications_recipient_idx
+  on public.community_notifications (recipient_user_id, created_at desc);
+```
+
+---
+
+## Run Order
+
+Execute in this sequence to avoid foreign-key errors:
+
+| Step | Query |
+|------|-------|
+| 1 | Patch `community_posts` columns |
+| 2 | `community_likes` table + policies + RPCs |
+| 3 | `community_comments` table + policies + RPCs |
+| 4 | `community_notifications` table + policies *(optional)* |
+
+---
+
+## Verify
+
+After running, confirm in **Supabase → Table Editor**:
+
+- `community_likes`: columns `id`, `post_id`, `user_id`, `created_at` — RLS enabled
+- `community_comments`: columns `id`, `post_id`, `user_id`, `content`, `created_at` — RLS enabled
+- **Database → Functions**: four RPCs exist:
+  - `increment_post_likes` / `decrement_post_likes`
+  - `increment_post_comments` / `decrement_post_comments`
