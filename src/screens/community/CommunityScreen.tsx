@@ -15,6 +15,7 @@ import { useCommunityPosts, useAddPost, useDeletePost } from "@/hooks/useCommuni
 import { useMyLikes, useToggleLike } from "@/hooks/useCommunityLikes";
 import { usePostComments, useAddComment } from "@/hooks/useCommunityComments";
 import { useCommunityStore } from "@/store/communityStore";
+import { useInsertNotification, useUnreadNotificationCount } from "@/hooks/useCommunityNotifications";
 import { useUiStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
 import type { CommunityPostRow } from "@/types/database";
@@ -207,24 +208,23 @@ function CommentsSection({
 }: { post: CommunityPostRow; userId: string; displayName: string; myAvatarUrl?: string | null }) {
   const { data: comments = [] } = usePostComments(post.id);
   const addComment = useAddComment();
+  const insertNotif = useInsertNotification();
   const [text, setText] = useState("");
-  const addNotif = useCommunityStore((s) => s.addNotification);
 
   const handleSubmit = async () => {
     if (!text.trim()) return;
     const preview = text.trim().slice(0, 60);
     await addComment.mutateAsync({ post_id: post.id, user_id: userId, content: text.trim() });
     setText("");
+    // Send notification to the POST OWNER (not the commenter)
     if (post.user_id !== userId) {
-      addNotif({
-        id: crypto.randomUUID(),
+      insertNotif.mutate({
+        recipient_user_id: post.user_id,
+        actor_user_id: userId,
+        actor_name: displayName,
+        post_id: post.id,
         type: "comment",
-        postId: post.id,
-        postSnippet: post.content.slice(0, 60),
-        actorName: displayName,
-        commentPreview: preview,
-        createdAt: new Date().toISOString(),
-        read: false,
+        comment_preview: preview,
       });
     }
   };
@@ -447,11 +447,12 @@ export function CommunityScreen() {
   const { data: posts = [], isLoading } = useCommunityPosts();
   const { data: myLikes = [] } = useMyLikes(userId);
   const toggleLike = useToggleLike();
-  const addNotif = useCommunityStore((s) => s.addNotification);
+  const insertNotif = useInsertNotification();
   const likedSetFromDb = new Set(myLikes.map((l) => l.post_id));
   const localLiked = useCommunityStore((s) => s.likedPostIds);
   const storeToggle = useCommunityStore((s) => s.toggleLike);
-  const unread = useCommunityStore((s) => s.unreadCount());
+  // Unread count now comes from Supabase — shows notifications FOR the current user
+  const unread = useUnreadNotificationCount(userId);
   const [composeOpen, setComposeOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>("All");
 
@@ -463,15 +464,15 @@ export function CommunityScreen() {
     const wasLiked = likedSet.has(post.id);
     storeToggle(post.id);
     toggleLike.mutate({ postId: post.id, userId, liked: wasLiked });
+    // When liking (not un-liking), notify the POST OWNER — never the liker
     if (!wasLiked && post.user_id !== userId) {
-      addNotif({
-        id: crypto.randomUUID(),
+      insertNotif.mutate({
+        recipient_user_id: post.user_id,
+        actor_user_id: userId,
+        actor_name: displayName,
+        post_id: post.id,
         type: "like",
-        postId: post.id,
-        postSnippet: post.content.slice(0, 60),
-        actorName: displayName,
-        createdAt: new Date().toISOString(),
-        read: false,
+        comment_preview: null,
       });
     }
   };

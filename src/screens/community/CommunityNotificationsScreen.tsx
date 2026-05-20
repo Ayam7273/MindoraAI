@@ -2,19 +2,25 @@ import { format, formatDistanceToNow } from "date-fns";
 import { Bell, ChevronLeft, Heart, MessageCircle } from "lucide-react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCommunityStore } from "@/store/communityStore";
+import {
+  useCommunityNotifications,
+  useMarkAllNotificationsRead,
+} from "@/hooks/useCommunityNotifications";
+import { useUiStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
 
 export function CommunityNotificationsScreen() {
   const navigate = useNavigate();
-  const notifications = useCommunityStore((s) => s.notifications);
-  const markAllRead = useCommunityStore((s) => s.markAllRead);
+  const userId = useUiStore((s) => s.user?.id) ?? "";
+  const { data: notifications = [], isLoading } = useCommunityNotifications(userId);
+  const markAllRead = useMarkAllNotificationsRead();
 
-  // Mark all read when screen opens
+  // Mark all read after 800ms so the unread count badge clears
   useEffect(() => {
-    const timer = setTimeout(markAllRead, 800);
+    if (!userId) return;
+    const timer = setTimeout(() => markAllRead.mutate(userId), 800);
     return () => clearTimeout(timer);
-  }, [markAllRead]);
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-dvh bg-[#FAF8F4] pb-28">
@@ -32,7 +38,15 @@ export function CommunityNotificationsScreen() {
         <span className="w-10 shrink-0" />
       </header>
 
-      {notifications.length === 0 ? (
+      {isLoading && (
+        <div className="flex flex-col gap-2 px-4 pt-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-20 animate-pulse rounded-2xl bg-[var(--color-border)]" />
+          ))}
+        </div>
+      )}
+
+      {!isLoading && notifications.length === 0 && (
         <div className="flex flex-col items-center gap-3 px-6 py-20 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-bg-secondary)]">
             <Bell className="h-8 w-8 text-[var(--color-text-muted)]" strokeWidth={1.25} />
@@ -42,11 +56,15 @@ export function CommunityNotificationsScreen() {
             When someone likes or comments on your post, you'll see it here.
           </p>
         </div>
-      ) : (
+      )}
+
+      {!isLoading && notifications.length > 0 && (
         <ul className="divide-y divide-[var(--color-border)]">
           {notifications.map((n) => {
             const isLike = n.type === "like";
-            const ts = new Date(n.createdAt);
+            const ts = new Date(n.created_at);
+            const actorLabel = n.actor_name ?? "Someone";
+
             return (
               <li
                 key={n.id}
@@ -55,13 +73,11 @@ export function CommunityNotificationsScreen() {
                   !n.read && "bg-[var(--color-accent-green-light)]/40",
                 )}
               >
-                {/* Icon */}
+                {/* Type icon */}
                 <div
                   className={cn(
                     "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
-                    isLike
-                      ? "bg-red-100 text-red-500"
-                      : "bg-[var(--color-accent-green-light)] text-[var(--color-accent-green)]",
+                    isLike ? "bg-red-100 text-red-500" : "bg-[var(--color-accent-green-light)] text-[var(--color-accent-green)]",
                   )}
                 >
                   {isLike ? (
@@ -75,19 +91,14 @@ export function CommunityNotificationsScreen() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-[var(--color-primary)]">
                     {isLike
-                      ? `${n.actorName} liked your post`
-                      : `${n.actorName} commented on your post`}
-                  </p>
-
-                  {/* Post snippet */}
-                  <p className="mt-0.5 line-clamp-1 text-xs text-[var(--color-text-muted)]">
-                    "{n.postSnippet}{n.postSnippet.length === 60 ? "…" : ""}"
+                      ? `${actorLabel} liked your post`
+                      : `${actorLabel} commented on your post`}
                   </p>
 
                   {/* Comment preview */}
-                  {!isLike && n.commentPreview && (
+                  {!isLike && n.comment_preview && (
                     <p className="mt-1 line-clamp-2 rounded-lg bg-[var(--color-bg-secondary)] px-2 py-1 text-xs text-[var(--color-text-secondary)]">
-                      {n.commentPreview}
+                      {n.comment_preview}
                     </p>
                   )}
 

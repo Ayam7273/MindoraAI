@@ -162,6 +162,7 @@ export interface CommunityNotificationRow {
   id: string;
   recipient_user_id: string;
   actor_user_id: string;
+  actor_name: string | null;    // display name of the actor stored at notification time
   post_id: string;
   type: "like" | "comment";
   comment_preview: string | null;

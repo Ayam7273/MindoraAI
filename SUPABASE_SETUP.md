@@ -298,6 +298,47 @@ create index if not exists chatbot_messages_conversation_id_idx
 
 ---
 
+---
+
+## 7 — Profiles: Allow Public Read of Display Name + Avatar
+
+**Why this is needed:** By default Supabase only lets users read their own profile row. The community feed queries other users' profiles to show their display name and avatar. Without this policy, those queries silently return null and the feed shows "Community member" for everyone.
+
+```sql
+-- Allow any authenticated user to read the public fields of any profile
+-- (id, full_name, avatar_url only — everything else stays private)
+create policy "Authenticated users can read public profile fields"
+  on public.profiles for select
+  using (auth.role() = 'authenticated');
+```
+
+> **Scope note:** This allows reading ALL columns of other profiles. If you want to restrict it to only public fields, use a database view instead:
+> ```sql
+> create view public.community_profiles as
+>   select id, full_name, avatar_url from public.profiles;
+> grant select on public.community_profiles to authenticated;
+> ```
+
+---
+
+## 8 — Community Notifications: Fix Direction + Actor Name
+
+The notifications table already exists (Section 4). These queries fix two bugs:
+
+**Bug A — Wrong direction:** Notifications were being stored client-side in Zustand for the *actor* (liker/commenter) instead of the *post owner*. The app now inserts into Supabase with the correct `recipient_user_id`. No schema change needed — just run the table creation from Section 4 if you haven't already.
+
+**Bug B — Actor name shows as "Someone":** To show the actor's real display name in notifications, store it at insert time:
+
+```sql
+-- Add actor_name column to community_notifications (stores the actor's display name at notification time)
+alter table public.community_notifications
+  add column if not exists actor_name text;
+```
+
+The app writes `actor_name` when inserting a notification so it's preserved even if the actor later changes their display name.
+
+---
+
 ## Run Order
 
 Execute in this sequence to avoid foreign-key errors:
@@ -307,9 +348,11 @@ Execute in this sequence to avoid foreign-key errors:
 | 1 | Patch `community_posts` columns |
 | 2 | `community_likes` table + policies + RPCs |
 | 3 | `community_comments` table + policies + RPCs |
-| 4 | `community_notifications` table + policies *(optional)* |
+| 4 | `community_notifications` table + policies |
 | 5 | Avatars storage bucket + policies |
-| 6 | `chatbot_messages` table + RLS + index *(if not already present)* |
+| 6 | `chatbot_messages` table + RLS + index |
+| 7 | Profiles public-read policy **← NEW — fixes "Community member" bug** |
+| 8 | `community_notifications.actor_name` column **← NEW — fixes notification direction** |
 
 ---
 
@@ -317,7 +360,9 @@ Execute in this sequence to avoid foreign-key errors:
 
 After running, confirm in **Supabase**:
 
-- **Table Editor:** `community_likes`, `community_comments` — RLS enabled
+- **Table Editor:** `community_likes`, `community_comments`, `community_notifications` — RLS enabled
+- **Table Editor → `community_notifications`:** has columns `id`, `recipient_user_id`, `actor_user_id`, `post_id`, `type`, `comment_preview`, `actor_name`, `read`, `created_at`
 - **Database → Functions:** `increment_post_likes`, `decrement_post_likes`, `increment_post_comments`, `decrement_post_comments`
-- **Storage:** `avatars` bucket exists, is marked **public**, and the four policies appear under **Storage → Policies**
-- **Table Editor → profiles:** `avatar_url` column exists (type `text`, nullable)
+- **Storage:** `avatars` bucket exists, is marked **public**
+- **Table Editor → `profiles`:** `avatar_url` column exists; **Authentication → Policies → profiles** shows a SELECT policy for `authenticated` role
+- **Test:** Log in as two different users. User A posts. User B likes it. Check User A's Notifications page — User A should see the notification, not User B.
