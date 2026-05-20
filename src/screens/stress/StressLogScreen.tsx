@@ -62,9 +62,8 @@ export function StressLogScreen() {
   const [camError, setCamError] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── cleanup on unmount ───────────────────────────────────────────────────
@@ -75,20 +74,34 @@ export function StressLogScreen() {
     };
   }, []);
 
+  // ── Wire stream to video element once it is in the DOM ───────────────────
+  // This runs whenever camState changes to "preview" or "recording",
+  // at which point videoRef.current is populated.
+  useEffect(() => {
+    if ((camState === "preview" || camState === "recording") && videoRef.current && streamRef.current) {
+      const video = videoRef.current;
+      video.srcObject = streamRef.current;
+      video.muted = true;
+      video.playsInline = true;
+      video.play().catch(() => {});
+    }
+  }, [camState]); // re-run whenever the video div appears/disappears
+
   // ── camera helpers ───────────────────────────────────────────────────────
 
   const startPreview = useCallback(async () => {
     setCamError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
+      });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
+      // Change state first so the <video> element renders into the DOM,
+      // then useEffect below will wire the srcObject once the ref is available.
       setCamState("preview");
     } catch {
-      setCamError("Camera permission denied or unavailable.");
+      setCamError("Camera permission denied or unavailable. Please allow camera access and try again.");
       setCamState("error");
     }
   }, []);
@@ -99,49 +112,40 @@ export function StressLogScreen() {
     if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
+  /** Capture a still frame from the live video via canvas → base64 JPEG */
+  const captureFrame = useCallback((): string | null => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return null;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Return base64 data URL without the prefix
+    return canvas.toDataURL("image/jpeg", 0.85).split(",")[1] ?? null;
+  }, []);
+
+  /** "Record" = show a 3-second countdown, then capture frame + analyse */
   const startRecording = useCallback(() => {
-    if (!streamRef.current) return;
-    chunksRef.current = [];
-
-    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp8")
-      ? "video/webm;codecs=vp8"
-      : "video/webm";
-
-    const recorder = new MediaRecorder(streamRef.current, { mimeType });
-    recorderRef.current = recorder;
-
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
-    };
-
-    recorder.onstop = () => {
-      void handleAnalyse();
-    };
-
-    recorder.start(200);
     setCamState("recording");
-
-    // auto-stop after 10 s
+    // Auto-capture after 3 seconds (gives user time to compose their face)
     timerRef.current = setTimeout(() => {
-      if (recorderRef.current?.state === "recording") {
-        recorderRef.current.stop();
-      }
-    }, 10_000);
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+      void handleAnalyse();
+    }, 3000);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stopRecording = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (recorderRef.current?.state === "recording") {
-      recorderRef.current.stop();
-    }
-  }, []);
+    void handleAnalyse();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAnalyse = useCallback(async () => {
     setCamState("analysing");
+    const frameB64 = captureFrame(); // grab frame BEFORE stopping stream
     stopStream();
 
     const label = getMeta(level).label;
-    const prompt = `The user just recorded a 10-second face video while reporting stress level ${level}/5. Based on their self-reported stress level and common physiological stress indicators, provide a detailed stress analysis. Include: 1) Overall stress assessment, 2) Physical indicators to watch for at this stress level, 3) Three specific coping strategies tailored to ${label} stress. Be compassionate and specific.`;
 
     if (!genAI) {
       setAiAnalysis(
@@ -153,19 +157,36 @@ export function StressLogScreen() {
 
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const result = await model.generateContent(prompt);
+
+      const parts: { text?: string; inlineData?: { mimeType: string; data: string } }[] = [
+        {
+          text: `You are a compassionate mental wellness AI. The user is reporting a stress level of ${level}/5 (${label}). ` +
+            `You have received a facial image captured from their camera. ` +
+            `Based on visible stress indicators (facial tension, expression, posture) AND the self-reported level, provide: ` +
+            `1) Overall stress assessment (2 sentences), ` +
+            `2) What physical signs you observe or would expect at this stress level, ` +
+            `3) Three specific, practical coping strategies for ${label} stress. ` +
+            `Be warm, specific, and non-clinical.`,
+        },
+      ];
+
+      // Attach the captured frame if available
+      if (frameB64) {
+        parts.push({ inlineData: { mimeType: "image/jpeg", data: frameB64 } });
+      }
+
+      const result = await model.generateContent(parts as Parameters<typeof model.generateContent>[0]);
       setAiAnalysis(result.response.text());
       setCamState("done");
     } catch {
-      setAiAnalysis("Could not generate analysis. Please try again.");
+      setAiAnalysis("Could not generate analysis right now. Your stress entry will still be saved.");
       setCamState("done");
     }
-  }, [level, stopStream]);
+  }, [level, stopStream, captureFrame]);
 
   const dismissCamera = useCallback(() => {
     stopStream();
     if (timerRef.current) clearTimeout(timerRef.current);
-    recorderRef.current = null;
     setCamState("idle");
     setAiAnalysis(null);
     setCamError(null);
@@ -378,6 +399,9 @@ export function StressLogScreen() {
           )}
 
           {/* Live preview + controls */}
+          {/* Hidden canvas for frame capture */}
+          <canvas ref={canvasRef} className="hidden" />
+
           {(camState === "preview" || camState === "recording") && (
             <div className="mt-4 flex flex-col items-center gap-4">
               <div className="relative h-48 w-48 overflow-hidden rounded-full border-4 border-white/80 shadow-xl">
@@ -386,12 +410,13 @@ export function StressLogScreen() {
                   autoPlay
                   muted
                   playsInline
-                  className="h-full w-full object-cover"
+                  className="h-full w-full -scale-x-100 object-cover"
+                  style={{ transform: "scaleX(-1)" }}
                 />
                 {camState === "recording" && (
-                  <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/60 px-3 py-1">
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                    <span className="text-[10px] font-semibold text-white">REC</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
+                    <span className="h-3 w-3 animate-pulse rounded-full bg-red-500 mb-1" />
+                    <span className="text-[10px] font-bold text-white">Hold still…</span>
                   </div>
                 )}
               </div>

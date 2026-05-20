@@ -1,16 +1,14 @@
 import { useMemo } from "react";
-import { format, subDays } from "date-fns";
-import { BookOpen, Brain, ChevronLeft, Flame, MessageSquare, Moon, Smile } from "lucide-react";
+import { format } from "date-fns";
+import { BookOpen, Brain, ChevronLeft, MessageSquare, Moon, Smile } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { MindoraScoreBadge } from "@/components/ui/MindoraScoreBadge";
 import { MoodEmoji } from "@/components/ui/MoodEmoji";
 import { useMindoraScore } from "@/hooks/useMindoraScore";
 import { useMoodEntries } from "@/hooks/useMoodEntries";
-import { useJournalEntries } from "@/hooks/useJournalEntries";
 import { useUiStore } from "@/store/uiStore";
 import type { MoodKey } from "@/types";
-import { cn } from "@/lib/utils";
 
 const MOOD_SCORE: Record<MoodKey, number> = {
   depressed: 1,
@@ -18,14 +16,6 @@ const MOOD_SCORE: Record<MoodKey, number> = {
   neutral: 3,
   happy: 4,
   overjoyed: 5,
-};
-
-const MOOD_COLOR: Record<MoodKey, string> = {
-  depressed: "bg-[var(--mood-depressed)]",
-  sad: "bg-[var(--mood-sad)]",
-  neutral: "bg-[var(--mood-neutral)]",
-  happy: "bg-[var(--mood-happy)]",
-  overjoyed: "bg-[var(--mood-overjoyed)]",
 };
 
 const BREAKDOWN_ROWS: {
@@ -72,7 +62,6 @@ export function MindoraScoreScreen() {
   const { score, breakdown } = useMindoraScore(userId);
 
   const { data: moodEntries = [] } = useMoodEntries(userId);
-  const { data: journalEntries = [] } = useJournalEntries(userId);
 
   const status = useMemo(() => {
     if (score >= 70) return "Mentally Stable";
@@ -82,44 +71,6 @@ export function MindoraScoreScreen() {
 
   // Last 7 mood entries for display
   const recentMoods = moodEntries.slice(0, 7);
-
-  // Average mood score over last 7 days
-  const avgMood =
-    recentMoods.length > 0
-      ? (recentMoods.reduce((s, e) => s + MOOD_SCORE[e.mood as MoodKey], 0) / recentMoods.length).toFixed(1)
-      : null;
-
-  // Check-in streak (consecutive days with mood entry — using created_at from Supabase)
-  const moodStreak = useMemo(() => {
-    if (!moodEntries.length) return 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let streak = 0;
-    for (let i = 0; i < 365; i++) {
-      const d = subDays(today, i);
-      const dateStr = d.toISOString().slice(0, 10);
-      const hasEntry = moodEntries.some((e) => e.created_at.startsWith(dateStr));
-      if (!hasEntry) break;
-      streak++;
-    }
-    return streak;
-  }, [moodEntries]);
-
-  // Journal streak (consecutive days with a journal entry — using created_at from Supabase)
-  const journalStreak = useMemo(() => {
-    if (!journalEntries.length) return 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let streak = 0;
-    for (let i = 0; i < 365; i++) {
-      const d = subDays(today, i);
-      const dateStr = d.toISOString().slice(0, 10);
-      const hasEntry = journalEntries.some((e) => e.created_at.startsWith(dateStr));
-      if (!hasEntry) break;
-      streak++;
-    }
-    return streak;
-  }, [journalEntries]);
 
   // Mood trend derived from real Supabase entries
   const trend = useMemo((): "up" | "down" | "stable" | null => {
@@ -133,18 +84,6 @@ export function MindoraScoreScreen() {
     if (recentAvg > olderAvg + 0.3) return "up";
     if (recentAvg < olderAvg - 0.3) return "down";
     return "stable";
-  }, [moodEntries]);
-
-  // 28-day mood heatmap (using created_at from Supabase)
-  const heatmap = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return Array.from({ length: 28 }, (_, i) => {
-      const d = subDays(today, 27 - i);
-      const dateStr = d.toISOString().slice(0, 10);
-      const entry = moodEntries.find((e) => e.created_at.startsWith(dateStr));
-      return { date: d, mood: (entry?.mood ?? null) as MoodKey | null };
-    });
   }, [moodEntries]);
 
   const trendLabel =
@@ -184,25 +123,6 @@ export function MindoraScoreScreen() {
       </header>
 
       <div className="-mt-4 space-y-4 rounded-t-[var(--radius-xl)] bg-[#FAF8F4] px-3 sm:px-4 pb-6 pt-5">
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <StatCard
-            icon={<Flame className="h-5 w-5 text-orange-500" />}
-            value={`${moodStreak}d`}
-            label="Check-in streak"
-          />
-          <StatCard
-            icon={<BookOpen className="h-5 w-5 text-[var(--color-text-secondary)]" strokeWidth={1.75} />}
-            value={`${journalStreak}d`}
-            label="Journal streak"
-          />
-          <StatCard
-            icon={<Smile className="h-5 w-5 text-[var(--color-text-secondary)]" strokeWidth={1.75} />}
-            value={avgMood ?? "–"}
-            label="Avg mood (7d)"
-          />
-        </div>
-
         {/* Score Breakdown */}
         <section>
           <h2 className="mb-2 text-sm font-bold text-[var(--color-primary)]">Score Breakdown</h2>
@@ -240,34 +160,6 @@ export function MindoraScoreScreen() {
           </div>
         )}
 
-        {/* 28-day mood heatmap */}
-        <section>
-          <h2 className="mb-2 text-sm font-bold text-[var(--color-primary)]">
-            Mood Calendar (28 days)
-          </h2>
-          <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-2 sm:p-3 shadow-[var(--shadow-sm)]">
-            <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
-              {heatmap.map(({ date, mood }, i) => (
-                <div
-                  key={i}
-                  title={`${format(date, "MMM d")}${mood ? ` — ${mood}` : ""}`}
-                  className={cn(
-                    "aspect-square rounded-sm",
-                    mood ? MOOD_COLOR[mood] : "bg-[var(--color-border)]",
-                  )}
-                />
-              ))}
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {(Object.entries(MOOD_COLOR) as [MoodKey, string][]).map(([m, c]) => (
-                <span key={m} className="flex items-center gap-1">
-                  <span className={cn("h-2.5 w-2.5 rounded-sm", c)} />
-                  <span className="text-[10px] capitalize text-[var(--color-text-muted)]">{m}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* Recent mood entries */}
         <section>
@@ -319,20 +211,3 @@ export function MindoraScoreScreen() {
   );
 }
 
-function StatCard({
-  icon,
-  value,
-  label,
-}: {
-  icon: React.ReactNode;
-  value: string;
-  label: string;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-1 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-2 sm:p-3 text-center shadow-[var(--shadow-sm)] overflow-hidden">
-      {icon}
-      <p className="text-base sm:text-lg font-bold text-[var(--color-primary)] tabular-nums">{value}</p>
-      <p className="text-[9px] sm:text-[10px] text-[var(--color-text-muted)] leading-tight">{label}</p>
-    </div>
-  );
-}

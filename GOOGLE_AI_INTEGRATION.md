@@ -1,6 +1,40 @@
 # Google AI (Gemini) Integration Guide
 
-This guide explains how to integrate Google's Gemini API into the Mindora app to power the AI chatbot, mood suggestions, journal reflections, and other generative features.
+This guide explains how to integrate Google's Gemini API into the Mindora app.
+
+---
+
+## ⚡ Quick Diagnosis — Why AI Features Are Not Working
+
+### Scenario: Key IS set but AI still fails ("I had trouble connecting" / "Could not generate analysis")
+
+If your `.env` has `VITE_GEMINI_API_KEY=AIzaSy...` but AI features still fail, the problem is **CORS**.
+
+Google's Generative AI API blocks direct browser-to-API calls in many environments. Open **F12 → Network tab** in your browser and look for a failed request to `generativelanguage.googleapis.com`. If it shows status `CORS` or `(blocked)`, that confirms it.
+
+**Immediate fix — remove key restrictions:**
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Navigate to **APIs & Services → Credentials**
+3. Click your API key
+4. Under **Application restrictions** → select **None** (or add `localhost` to allowed referrers)
+5. Under **API restrictions** → select **Don't restrict key** (or explicitly allow "Generative Language API")
+6. Save, wait 2-3 minutes, refresh the app
+
+**Permanent fix — use the Supabase Edge Function (§10 below)**
+This moves the Gemini call server-side so CORS is never an issue.
+
+**Other common reasons:**
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Console: `VITE_GEMINI_API_KEY is not set` | Key missing from `.env` | Add key and restart dev server |
+| Console: `API_KEY_INVALID` | Key is wrong or revoked | Re-generate key in AI Studio |
+| Console: `PERMISSION_DENIED` | "Generative Language API" not enabled | In Cloud Console → APIs → enable "Generative Language API" |
+| Network tab shows blocked CORS request | Browser call blocked | Remove key restrictions (above) or use Edge Function |
+| AI works in dev but not on Vercel | Env var missing in Vercel | Add `VITE_GEMINI_API_KEY` in Vercel → Settings → Environment Variables |
+
+**Do you need Google AI Studio Cloud Projects?**
+No — a key from [Google AI Studio](https://aistudio.google.com/) works directly. But if you get CORS or PERMISSION_DENIED errors, you may need to visit [console.cloud.google.com](https://console.cloud.google.com) to manage the key's restrictions (not to "import" the project — just to adjust the key settings).
 
 ---
 
@@ -31,7 +65,25 @@ npm run dev
 
 ---
 
+## 2b. Verify the Key is Loaded Correctly
+
+Add this one-liner in your browser console after the app loads:
+
+```js
+console.log(import.meta.env.VITE_GEMINI_API_KEY?.slice(0, 8))
+```
+
+You should see the first 8 characters of your key (e.g. `AIzaSy12`). If you see `undefined`, the `.env` file is not being read — make sure:
+- The file is named `.env` (not `.env.local` or `.env.example`)
+- The variable starts with `VITE_` (Vite only exposes variables with this prefix)
+- You restarted the dev server after adding the key
+
+---
+
 ## 3. Install the Google Generative AI SDK
+
+The SDK is already installed (`@google/generative-ai` is in `package.json`).  
+If you ever need to reinstall:
 
 ```bash
 npm install @google/generative-ai

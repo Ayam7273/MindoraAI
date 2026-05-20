@@ -79,8 +79,16 @@ export async function* streamAIResponse(
       if (text) yield text;
     }
   } catch (err) {
-    // Network error or safety block — fall back gracefully
-    console.warn("Gemini stream error:", err);
+    const errMsg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+    console.error("🔴 Gemini API error:", err);
+    if (errMsg.includes("cors") || errMsg.includes("fetch") || errMsg.includes("network") || errMsg.includes("failed to fetch")) {
+      console.error(
+        "⚠️  CORS / network error — Gemini cannot be called directly from the browser in some environments.\n" +
+        "Open browser DevTools → Console/Network and look for a blocked request to 'generativelanguage.googleapis.com'.\n" +
+        "Fix: either (a) remove any HTTP referrer restrictions from your Google API key in the Google Cloud Console,\n" +
+        "or (b) implement the Supabase Edge Function described in GOOGLE_AI_INTEGRATION.md §10."
+      );
+    }
     yield* fallbackResponse(messages);
   }
 }

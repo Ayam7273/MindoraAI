@@ -3,6 +3,9 @@ import { Bot, ChevronLeft, Mic, MicOff, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { genAI } from "@/lib/gemini";
 import { cn } from "@/lib/utils";
+import { useUpsertConversation } from "@/hooks/useChatbotConversations";
+import { useAddMessage } from "@/hooks/useChatbotMessages";
+import { useUiStore } from "@/store/uiStore";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Turn {
@@ -30,6 +33,10 @@ const SYSTEM_PROMPT =
 // ── Component ─────────────────────────────────────────────────────────────────
 export function VoiceChatScreen() {
   const navigate = useNavigate();
+  const userId = useUiStore((s) => s.user?.id) ?? "";
+  const upsertConvo = useUpsertConversation();
+  const addMsg = useAddMessage();
+  const convoIdRef = useRef<string | null>(null);
 
   // Conversation history for multi-turn Gemini context
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -115,6 +122,24 @@ export function VoiceChatScreen() {
     setTurns(updatedTurns);
     setTranscript("");
 
+    // Create or reuse a Supabase conversation so it appears in Recent Conversations
+    let convoId = convoIdRef.current;
+    if (!convoId && userId) {
+      try {
+        const row = await upsertConvo.mutateAsync({
+          user_id: userId,
+          name: `Voice session · ${new Date().toLocaleDateString()}`,
+          tags: ["Voice"],
+        });
+        convoId = row.id;
+        convoIdRef.current = convoId;
+      } catch { /* non-critical */ }
+    }
+    // Save user message
+    if (convoId && userId) {
+      addMsg.mutate({ conversation_id: convoId, role: "user", content: userText });
+    }
+
     if (!genAI) {
       const fallback = "I'm here for you, but my AI connection isn't configured right now. Please set your Gemini API key to enable full responses.";
       setTurns([...updatedTurns, { role: "ai", text: fallback }]);
@@ -149,6 +174,10 @@ export function VoiceChatScreen() {
 
       setTurns([...updatedTurns, { role: "ai", text: full }]);
       setAiText("");
+      // Save AI response to Supabase
+      if (convoIdRef.current && userId) {
+        addMsg.mutate({ conversation_id: convoIdRef.current, role: "assistant", content: full });
+      }
       speak(full);
     } catch (err) {
       const msg = "I had trouble connecting. Please try again.";
@@ -212,7 +241,7 @@ export function VoiceChatScreen() {
   const BAR_COUNT = 28;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#0f0d0b] text-white">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-[#0f0d0b] text-white overflow-y-auto">
       {/* Header */}
       <header className="flex items-center px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <button

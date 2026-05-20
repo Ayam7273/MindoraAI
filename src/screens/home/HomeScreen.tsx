@@ -7,13 +7,11 @@ import {
   Heart,
   Moon,
   Search,
-  Sparkles,
   Wind,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MoodEmoji } from "@/components/ui/MoodEmoji";
-import { ProgressRing } from "@/components/ui/ProgressRing";
 import { cn } from "@/lib/utils";
 import { useMindoraScore } from "@/hooks/useMindoraScore";
 import { useUiStore } from "@/store/uiStore";
@@ -187,32 +185,13 @@ export function HomeScreen() {
             </div>
           </section>
 
-          {/* Mindful Tracker — horizontal scroll; min-width enforced by CSS at 999px & 500px */}
+          {/* Mindful Tracker — 3 stunning icon cards */}
           <section>
             <p className="home-section-heading mb-3 text-xs font-bold text-[var(--color-primary)]">Mindful Tracker</p>
-            <div className="home-tracker-scroll flex flex-row gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {[
-                { to: "/mindful",           icon: <Sparkles  className="h-5 w-5 text-[var(--color-accent-green)]"   />, label: "Mindful Hours", value: "Today",     bg: "bg-[var(--color-accent-green-light)]" },
-                { to: "/sleep",             icon: <Moon      className="h-5 w-5 text-[var(--color-accent-purple)]"  />, label: "Sleep Quality",  value: "Quality",   bg: "bg-[#ede8f5]" },
-                { to: "/journal",           icon: <BookOpen  className="h-5 w-5 text-[var(--color-primary)]"        />, label: "Journal",        value: "Streak",    bg: "bg-[var(--color-bg-secondary)]" },
-                { to: "/stress",            icon: <Brain     className="h-5 w-5 text-[var(--color-accent-orange)]"  />, label: "Stress Level",   value: "Level 2",   bg: "bg-[var(--color-accent-orange-light)]" },
-                { to: "/mood",              icon: <Heart     className="h-5 w-5 text-[var(--color-danger)]"         />, label: "Mood Tracker",   value: "Today",     bg: "bg-[var(--color-surface)]" },
-                { to: "/mindful/exercise",  icon: <Wind      className="h-5 w-5 text-blue-400"                      />, label: "Breathing",      value: "Exercises", bg: "bg-[#e8f4fd]" },
-              ].map((item) => (
-                <Link
-                  key={item.to + item.label}
-                  to={item.to}
-                  className={cn("home-tracker-card flex shrink-0 flex-col rounded-2xl ring-1 ring-[var(--color-border)] shadow-sm", item.bg)}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="home-tracker-label text-[10px] font-bold uppercase leading-tight tracking-wide text-[var(--color-text-secondary)]">
-                      {item.label}
-                    </span>
-                    {item.icon}
-                  </div>
-                  <p className="home-tracker-value mt-2 text-base font-bold text-[var(--color-primary)]">{item.value}</p>
-                </Link>
-              ))}
+            <div className="grid grid-cols-3 gap-3">
+              <MobileTrackerCard to="/sleep"  icon={<Moon  className="h-8 w-8" strokeWidth={1.5} />} label="Sleep"  gradient="from-[#7B6EC8] to-[#5a4ea8]" />
+              <MobileTrackerCard to="/mood"   icon={<Heart className="h-8 w-8" strokeWidth={1.5} />} label="Mood"   gradient="from-[#E07A3A] to-[#c95e1e]" />
+              <MobileTrackerCard to="/stress" icon={<Brain className="h-8 w-8" strokeWidth={1.5} />} label="Stress" gradient="from-[#5BAD6F] to-[#3d8f53]" />
             </div>
           </section>
 
@@ -326,42 +305,13 @@ export function HomeScreen() {
               </div>
             </section>
 
-            {/* Mindful Tracker — horizontal scroll on desktop too */}
+            {/* Mindful Tracker — 3 stunning icon cards (desktop) */}
             <section>
               <h2 className="mb-3 text-sm font-bold text-[var(--color-primary)]">Mindful Tracker</h2>
-              <div className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <DesktopTrackerCard to="/mindful" icon={<Sparkles className="h-5 w-5 text-[var(--color-accent-green)]" />} title="Mindful Hours" value="2.5h Today" accent="bg-[var(--color-accent-green-light)]">
-                  <div className="mt-3 h-8 w-full rounded-md bg-white/60">
-                    <svg viewBox="0 0 100 32" className="h-full w-full text-[var(--color-accent-green)]" preserveAspectRatio="none">
-                      <path d="M0 24 Q25 8 50 18 T100 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                </DesktopTrackerCard>
-                <DesktopTrackerCard to="/sleep" icon={<Moon className="h-5 w-5 text-[var(--color-accent-purple)]" />} title="Sleep Quality" value="Insomniac" sub="REM 7.8h" accent="bg-[#ede8f5]">
-                  <div className="mt-3 flex justify-center">
-                    <ProgressRing value={0.35} size={56} stroke={5} progressColor="var(--color-accent-purple)" />
-                  </div>
-                </DesktopTrackerCard>
-                <DesktopTrackerCard to="/journal" icon={<BookOpen className="h-5 w-5 text-[var(--color-primary)]" />} title="Mindful Journal" value="Streak" accent="bg-[var(--color-bg-secondary)]">
-                  <div className="mt-3 grid grid-cols-7 gap-0.5">
-                    {Array.from({ length: 21 }).map((_, i) => (
-                      <span key={i} className={cn("aspect-square rounded-[2px]", i % 4 === 0 ? "bg-[var(--color-accent-green)]" : "bg-[var(--color-border)]")} />
-                    ))}
-                  </div>
-                </DesktopTrackerCard>
-                <DesktopTrackerCard to="/stress" icon={<Brain className="h-5 w-5 text-[var(--color-accent-orange)]" />} title="Stress Level" value="Level 2" sub="(Normal)" accent="bg-[var(--color-accent-orange-light)]">
-                  <div className="mt-3 flex h-10 items-end gap-1">
-                    {[8, 14, 11, 6, 4].map((h, i) => (
-                      <span key={i} className="flex-1 rounded-full bg-[var(--color-accent-orange)]/85" style={{ height: `${h * 2}px` }} />
-                    ))}
-                  </div>
-                </DesktopTrackerCard>
-                <DesktopTrackerCard to="/mood" icon={<Heart className="h-5 w-5 text-[var(--color-danger)]" />} title="Mood Tracker" value="Today" accent="bg-[var(--color-surface)]">
-                  <div className="mt-2 flex gap-1">
-                    {(["sad", "happy", "neutral"] as const).map((m) => <MoodEmoji key={m} mood={m} size={26} />)}
-                  </div>
-                </DesktopTrackerCard>
-                <DesktopTrackerCard to="/mindful/exercise" icon={<Wind className="h-5 w-5 text-blue-400" />} title="Breathing" value="Exercises" accent="bg-[#e8f4fd]" />
+              <div className="grid grid-cols-3 gap-4">
+                <DesktopBigTrackerCard to="/sleep"  icon={<Moon  className="h-10 w-10" strokeWidth={1.25} />} label="Sleep Quality"  gradient="from-[#7B6EC8] to-[#5a4ea8]" />
+                <DesktopBigTrackerCard to="/mood"   icon={<Heart className="h-10 w-10" strokeWidth={1.25} />} label="Mood Tracker"   gradient="from-[#E07A3A] to-[#c95e1e]" />
+                <DesktopBigTrackerCard to="/stress" icon={<Brain className="h-10 w-10" strokeWidth={1.25} />} label="Stress Level"   gradient="from-[#5BAD6F] to-[#3d8f53]" />
               </div>
             </section>
           </div>
@@ -398,25 +348,6 @@ export function HomeScreen() {
               </div>
             </section>
 
-            {/* Today at a Glance */}
-            <section className="rounded-[var(--radius-xl)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)] ring-1 ring-[var(--color-border)]">
-              <h2 className="mb-4 text-sm font-bold text-[var(--color-primary)]">Today at a Glance</h2>
-              <div className="space-y-3">
-                {[
-                  { icon: <Sparkles className="h-4 w-4 text-[var(--color-accent-green)]" />, label: "Mindful Hours", value: "2.5h" },
-                  { icon: <Moon className="h-4 w-4 text-[var(--color-accent-purple)]" />, label: "Sleep", value: "7.8h" },
-                  { icon: <Brain className="h-4 w-4 text-[var(--color-accent-orange)]" />, label: "Stress Level", value: "2 / 10" },
-                  { icon: <Heart className="h-4 w-4 text-[var(--color-danger)]" />, label: "Mood", value: moodLabel },
-                ].map(({ icon, label, value }) => (
-                  <div key={label} className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                      {icon}{label}
-                    </span>
-                    <span className="text-sm font-semibold text-[var(--color-primary)]">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
           </div>
         </div>
       </div>
@@ -434,18 +365,59 @@ function DesktopQuickCard({ to, icon, label, color, textColor }: { to: string; i
   );
 }
 
-function DesktopTrackerCard({ to, icon, title, value, sub, accent, children }: {
-  to: string; icon: ReactNode; title: string; value: string; sub?: string; accent: string; children?: ReactNode;
+/** Mobile: square gradient card — icon + name only, no stats */
+function MobileTrackerCard({ to, icon, label, gradient }: {
+  to: string; icon: ReactNode; label: string; gradient: string;
 }) {
   return (
-    <Link to={to} className={cn("flex min-w-[10.5rem] max-w-[10.5rem] shrink-0 flex-col rounded-[var(--radius-xl)] p-4 shadow-[var(--shadow-sm)] ring-1 ring-[var(--color-border)]", accent)}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-secondary)]">{title}</span>
-        {icon}
-      </div>
-      <p className="mt-2 text-lg font-bold text-[var(--color-primary)]">{value}</p>
-      {sub && <p className="text-xs text-[var(--color-text-muted)]">{sub}</p>}
-      {children}
+    <Link
+      to={to}
+      className={cn(
+        "relative flex flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl p-5 text-white shadow-lg transition-transform active:scale-[0.96]",
+        "bg-gradient-to-br",
+        gradient,
+      )}
+      style={{ minHeight: "110px" }}
+    >
+      {/* Subtle dot pattern overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-15"
+        style={{
+          backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+          backgroundSize: "14px 14px",
+        }}
+      />
+      <div className="relative">{icon}</div>
+      <span className="relative text-xs font-bold tracking-wide text-white/90">{label}</span>
+    </Link>
+  );
+}
+
+/** Desktop: wide gradient card — icon + name only */
+function DesktopBigTrackerCard({ to, icon, label, gradient }: {
+  to: string; icon: ReactNode; label: string; gradient: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "relative flex flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl p-8 text-white shadow-xl transition-transform hover:scale-[1.02] active:scale-[0.97]",
+        "bg-gradient-to-br",
+        gradient,
+      )}
+      style={{ minHeight: "160px" }}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 opacity-10"
+        style={{
+          backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+          backgroundSize: "16px 16px",
+        }}
+      />
+      {/* Soft glow blob */}
+      <div className="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
+      <div className="relative">{icon}</div>
+      <span className="relative text-sm font-bold tracking-wide text-white/90">{label}</span>
     </Link>
   );
 }

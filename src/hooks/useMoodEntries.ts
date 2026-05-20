@@ -15,6 +15,8 @@ export const useMoodEntries = (userId: string | undefined) =>
       return data as MoodEntryRow[];
     },
     enabled: Boolean(userId),
+    staleTime: 0,           // always re-fetch when query is used
+    refetchOnWindowFocus: true,
   });
 
 export const useAddMoodEntry = () => {

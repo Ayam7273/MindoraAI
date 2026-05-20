@@ -107,7 +107,7 @@ export function WelcomeScreen() {
               type="button"
               fullWidth
               onClick={() => navigate("/signup")}
-              className="h-12 rounded-full bg-white font-semibold text-black hover:bg-white/90"
+              className="h-12 rounded-full bg-black font-semibold text-white"
             >
               Get Started
             </Button>

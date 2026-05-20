@@ -15,6 +15,8 @@ export const useJournalEntries = (userId: string | undefined) =>
       return data as JournalEntryRow[];
     },
     enabled: Boolean(userId),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
 export type JournalInsert = {

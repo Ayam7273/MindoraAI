@@ -1,28 +1,23 @@
-import { format } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
-  Check,
-  Mic,
-  MicOff,
-  Search,
-  Stethoscope,
-  Video,
+  ArrowRight,
+  Brain,
+  CheckCircle2,
+  Heart,
+  Moon,
+  Pill,
+  Smile,
+  Sparkles,
+  Target,
+  User,
 } from "lucide-react";
-import type { ReactNode } from "react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/Button";
-import { useSaveAssessmentResponse } from "@/hooks/useAssessmentResponses";
+import { useAddStressEntry } from "@/hooks/useStressEntries";
 import { useUpdateProfile } from "@/hooks/useProfile";
 import { useUpdateMindoraScore } from "@/hooks/useMindoraScoreHistory";
-import { useAddStressEntry } from "@/hooks/useStressEntries";
+import { useSaveAssessmentResponse } from "@/hooks/useAssessmentResponses";
 import { computeMindoraScore } from "@/lib/mindoraScoreModel";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/store/uiStore";
@@ -34,17 +29,18 @@ import {
   SYMPTOM_CHIPS,
 } from "@/screens/auth/assessmentData";
 
-const TOTAL = 14;
+// ── Types ─────────────────────────────────────────────────────────────────────
+type BodyZone = "head" | "chest" | "arms" | "abdomen" | "legs";
 
-const BODY_ZONES = [
+const BODY_ZONES: { id: BodyZone; label: string }[] = [
   { id: "head", label: "Head" },
   { id: "chest", label: "Chest" },
   { id: "arms", label: "Arms" },
   { id: "abdomen", label: "Abdomen" },
   { id: "legs", label: "Legs" },
-] as const;
+];
 
-type BodyZoneId = (typeof BODY_ZONES)[number]["id"];
+const TOTAL_STEPS = 11;
 
 function moodSliderToKey(m: number): MoodKey {
   if (m < 20) return "depressed";
@@ -54,812 +50,426 @@ function moodSliderToKey(m: number): MoodKey {
   return "overjoyed";
 }
 
+// ── Step wrapper ──────────────────────────────────────────────────────────────
+function StepCard({ children, icon, title, subtitle }: {
+  children: React.ReactNode;
+  icon: React.ReactNode;
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <div className="flex flex-1 flex-col">
+      {/* Icon + heading */}
+      <div className="mb-8 flex flex-col items-center text-center">
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-accent-green-light)] text-[var(--color-accent-green)]">
+          {icon}
+        </div>
+        <h2 className="text-xl font-bold text-[var(--color-primary)]" style={{ fontFamily: "var(--font-serif)" }}>
+          {title}
+        </h2>
+        {subtitle && (
+          <p className="mt-2 max-w-xs text-sm leading-relaxed text-[var(--color-text-secondary)]">{subtitle}</p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── Choice chip ───────────────────────────────────────────────────────────────
+function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-2 rounded-2xl border-2 px-4 py-3 text-sm font-semibold transition-all active:scale-[0.97]",
+        selected
+          ? "border-[var(--color-accent-green)] bg-[var(--color-accent-green-light)] text-[var(--color-primary)]"
+          : "border-[var(--color-border)] bg-white text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]",
+      )}
+    >
+      {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--color-accent-green)]" strokeWidth={2.5} />}
+      {label}
+    </button>
+  );
+}
+
+// ── Yes / No pair ─────────────────────────────────────────────────────────────
+function YesNo({ value, onChange }: { value: boolean | null; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex gap-3">
+      {[true, false].map((v) => (
+        <button
+          key={String(v)}
+          type="button"
+          onClick={() => onChange(v)}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 py-4 text-sm font-bold transition-all",
+            value === v
+              ? "border-[var(--color-accent-green)] bg-[var(--color-accent-green-light)] text-[var(--color-primary)]"
+              : "border-[var(--color-border)] bg-white text-[var(--color-text-secondary)]",
+          )}
+        >
+          {v ? "Yes" : "No"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 export function MentalHealthAssessmentScreen() {
   const navigate = useNavigate();
   const saveAssessment = useSaveAssessmentResponse();
   const updateProfile = useUpdateProfile();
   const addStress = useAddStressEntry();
   const updateMindora = useUpdateMindoraScore();
-  const [step, setStep] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
+  const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState(1);
+
+  // Form state
   const [healthGoal, setHealthGoal] = useState<string | null>(null);
-  const [gender, setGender] = useState<"male" | "female" | null>(null);
+  const [gender, setGender] = useState<string | null>(null);
   const [age, setAge] = useState(24);
-  const [weightKg, setWeightKg] = useState(68);
   const [mood, setMood] = useState(50);
   const [professionalHelp, setProfessionalHelp] = useState<boolean | null>(null);
   const [physicalDistress, setPhysicalDistress] = useState<boolean | null>(null);
-  const [bodyZones, setBodyZones] = useState<BodyZoneId[]>([]);
+  const [bodyZones, setBodyZones] = useState<BodyZone[]>([]);
   const [sleepQuality, setSleepQuality] = useState<string | null>(null);
   const [takesMeds, setTakesMeds] = useState<boolean | null>(null);
   const [medSearch, setMedSearch] = useState("");
   const [selectedMeds, setSelectedMeds] = useState<string[]>([]);
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [stress, setStress] = useState(3);
-  const [recording, setRecording] = useState(false);
-  const [voiceTranscript, setVoiceTranscript] = useState("");
-  const [cameraOn, setCameraOn] = useState(false);
-
-  const progress = ((step + 1) / TOTAL) * 100;
-
-  const toggleBodyZone = (id: BodyZoneId) => {
-    setBodyZones((prev) =>
-      prev.includes(id) ? prev.filter((z) => z !== id) : [...prev, id],
-    );
-  };
-
-  const toggleMed = (name: string) => {
-    setSelectedMeds((prev) =>
-      prev.includes(name) ? prev.filter((m) => m !== name) : [...prev, name],
-    );
-  };
-
-  const toggleSymptom = (s: string) => {
-    setSymptoms((prev) =>
-      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s],
-    );
-  };
 
   const filteredMeds = useMemo(() => {
     const q = medSearch.trim().toLowerCase();
-    if (!q) return [...COMMON_MEDICATIONS];
-    return COMMON_MEDICATIONS.filter((m) => m.toLowerCase().includes(q));
+    return q ? COMMON_MEDICATIONS.filter((m) => m.toLowerCase().includes(q)) : [...COMMON_MEDICATIONS];
   }, [medSearch]);
-
-  const stopRecording = useCallback(() => {
-    const mr = mediaRecorderRef.current;
-    if (mr && mr.state !== "inactive") mr.stop();
-    mediaRecorderRef.current = null;
-    setRecording(false);
-  }, []);
-
-  const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      mediaRecorderRef.current = mr;
-      mr.ondataavailable = () => {};
-      mr.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        setVoiceTranscript((t) => t || "I feel lonely... with all my heart.");
-      };
-      mr.start();
-      setRecording(true);
-    } catch {
-      setVoiceTranscript("I feel lonely... with all my heart.");
-    }
-  }, []);
-
-  useEffect(() => {
-    if (step !== 12) {
-      stopRecording();
-    }
-  }, [step, stopRecording]);
-
-  useEffect(() => {
-    if (step !== 13) {
-      setCameraOn(false);
-      if (videoRef.current) {
-        const src = videoRef.current.srcObject as MediaStream | null;
-        src?.getTracks().forEach((t) => t.stop());
-        videoRef.current.srcObject = null;
-      }
-      return;
-    }
-
-    let stream: MediaStream | null = null;
-    (async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" },
-          audio: false,
-        });
-        setCameraOn(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          void videoRef.current.play();
-        }
-      } catch {
-        setCameraOn(false);
-      }
-    })();
-
-    return () => {
-      stream?.getTracks().forEach((t) => t.stop());
-      if (videoRef.current) videoRef.current.srcObject = null;
-    };
-  }, [step]);
 
   const canContinue = useMemo(() => {
     switch (step) {
-      case 0:
-        return healthGoal != null;
-      case 1:
-        return gender != null;
-      case 2:
-        return age >= 13 && age <= 120;
-      case 3:
-        return weightKg >= 30 && weightKg <= 250;
-      case 4:
-        return true;
-      case 5:
-        return professionalHelp != null;
-      case 6:
-        return physicalDistress != null;
-      case 7:
-        return sleepQuality != null;
-      case 8:
-        return takesMeds != null;
-      case 9:
-        return takesMeds === false || selectedMeds.length > 0;
-      case 10:
-        return symptoms.length > 0;
-      case 11:
-        return stress >= 1 && stress <= 5;
-      case 12:
-        return voiceTranscript.trim().length > 0;
-      case 13:
-        return true;
-      default:
-        return true;
+      case 0: return healthGoal != null;
+      case 1: return gender != null;
+      case 2: return age >= 13 && age <= 120;
+      case 3: return true; // mood slider
+      case 4: return professionalHelp != null;
+      case 5: return physicalDistress != null;
+      case 6: return physicalDistress === false || bodyZones.length > 0;
+      case 7: return sleepQuality != null;
+      case 8: return takesMeds != null;
+      case 9: return takesMeds === false || selectedMeds.length > 0;
+      case 10: return symptoms.length > 0;
+      default: return true;
     }
-  }, [
-    step,
-    healthGoal,
-    gender,
-    age,
-    weightKg,
-    professionalHelp,
-    physicalDistress,
-    sleepQuality,
-    takesMeds,
-    selectedMeds.length,
-    symptoms.length,
-    stress,
-    voiceTranscript,
-  ]);
+  }, [step, healthGoal, gender, age, professionalHelp, physicalDistress, bodyZones, sleepQuality, takesMeds, selectedMeds, symptoms]);
+
+  const goNext = () => {
+    if (step === 5 && physicalDistress === false) {
+      // Skip body zones step
+      setDirection(1); setStep(7);
+    } else if (step === 8 && takesMeds === false) {
+      // Skip medication selection
+      setDirection(1); setStep(10);
+    } else if (step < TOTAL_STEPS - 1) {
+      setDirection(1); setStep((s) => s + 1);
+    } else {
+      void finishAssessment();
+    }
+  };
 
   const goBack = () => {
-    if (step > 0) setStep((s) => s - 1);
-    else navigate(-1);
+    if (step === 7 && physicalDistress === false) {
+      setDirection(-1); setStep(5);
+    } else if (step === 10 && takesMeds === false) {
+      setDirection(-1); setStep(8);
+    } else if (step > 0) {
+      setDirection(-1); setStep((s) => s - 1);
+    } else {
+      navigate(-1);
+    }
   };
 
   const finishAssessment = async () => {
     const userId = useUiStore.getState().user?.id;
-    if (!userId) {
-      navigate("/signin", { replace: true });
-      return;
-    }
+    if (!userId) { navigate("/signin", { replace: true }); return; }
     const moodKey = moodSliderToKey(mood);
-    const computed = computeMindoraScore({
-      mood: moodKey,
-      sleepHours: 7,
-      stressLevel: stress,
-      journalStreakDays: 0,
-    });
+    const computed = computeMindoraScore({ mood: moodKey, sleepHours: 7, stressLevel: stress, journalStreakDays: 0 });
     try {
       await saveAssessment.mutateAsync({
         user_id: userId,
-        responses: {
-          healthGoal,
-          gender,
-          age,
-          weightKg,
-          moodSlider: mood,
-          professionalHelp,
-          physicalDistress,
-          bodyZones,
-          sleepQuality,
-          takesMeds,
-          selectedMeds,
-          symptoms,
-          stress,
-          voiceTranscript,
-        },
+        responses: { healthGoal, gender, age, moodSlider: mood, professionalHelp, physicalDistress, bodyZones, sleepQuality, takesMeds, selectedMeds, symptoms, stress },
         initial_mindora_score: computed,
       });
       await addStress.mutateAsync({ user_id: userId, stress_level: stress });
-      await updateMindora.mutateAsync({
-        userId,
-        score: computed,
-        reason: "Initial assessment",
-      });
-      await updateProfile.mutateAsync({
-        id: userId,
-        patch: {
-          assessment_complete: true,
-          weight: weightKg,
-          gender: gender ?? null,
-        },
-      });
+      await updateMindora.mutateAsync({ userId, score: computed, reason: "Initial assessment" });
+      await updateProfile.mutateAsync({ id: userId, patch: { assessment_complete: true, gender: gender ?? null } });
       navigate("/profile-setup");
-    } catch {
-      // Supabase errors surface in devtools; keep user on screen to retry
-    }
+    } catch { /* show retry on next attempt */ }
   };
 
-  const goNext = () => {
-    if (step < TOTAL - 1) setStep((s) => s + 1);
-    else void finishAssessment();
-  };
+  const progress = ((step + 1) / TOTAL_STEPS) * 100;
 
-  const moodEmoji =
-    mood < 20
-      ? "😢"
-      : mood < 40
-        ? "😟"
-        : mood < 60
-          ? "😐"
-          : mood < 80
-            ? "🙂"
-            : "😄";
+  const moodLabel = mood < 20 ? "Depressed" : mood < 40 ? "Sad" : mood < 60 ? "Neutral" : mood < 80 ? "Happy" : "Overjoyed";
+  const moodColor = mood < 20 ? "#7B6EC8" : mood < 40 ? "#E07A3A" : mood < 60 ? "#8B7355" : mood < 80 ? "#F5C842" : "#5BAD6F";
+
+  const stressLabels = ["", "Calm", "Normal", "Elevated", "Stressed", "Extreme"];
+  const stressColors = ["", "#22c55e", "#84cc16", "#f59e0b", "#f97316", "#ef4444"];
 
   return (
-    <div
-      className="flex min-h-dvh flex-col bg-[#FAF8F4]"
-      style={{ fontFamily: "var(--font-sans)" }}
-    >
-      <header className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[#FAF8F4]/95 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-sm">
-        <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={goBack}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-[var(--color-primary)] hover:bg-[var(--color-bg-secondary)]"
-            aria-label="Back"
-          >
-            <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+    <div className="flex min-h-dvh flex-col bg-[#FAF8F4]" style={{ fontFamily: "var(--font-sans)" }}>
+
+      {/* Progress header */}
+      <header className="sticky top-0 z-10 bg-[#FAF8F4]/95 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-sm">
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={goBack} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-[var(--color-border)]">
+            <ArrowLeft className="h-4 w-4 text-[var(--color-primary)]" strokeWidth={2} />
           </button>
-          <span className="text-[var(--text-base)] font-semibold text-[var(--color-text-primary)]">
-            Assessment
+          <div className="flex-1">
+            <div className="h-2 overflow-hidden rounded-full bg-[var(--color-border)]">
+              <motion.div
+                className="h-full rounded-full bg-[var(--color-accent-green)]"
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+              />
+            </div>
+          </div>
+          <span className="shrink-0 text-xs font-semibold text-[var(--color-text-muted)]">
+            {step + 1}/{TOTAL_STEPS}
           </span>
-          <button
-            type="button"
-            onClick={() => void finishAssessment()}
-            className="px-2 py-1.5 text-[var(--text-sm)] font-medium text-[var(--color-accent-green)]"
-          >
-            Skip
-          </button>
         </div>
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-[var(--color-border)]">
-          <motion.div
-            className="h-full rounded-full bg-[var(--color-accent-green)]"
-            initial={false}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.25 }}
-          />
-        </div>
-        <p className="mt-1.5 text-center text-[11px] text-[var(--color-text-muted)]">
-          {step + 1} of {TOTAL}
-        </p>
       </header>
 
-      <div className="flex flex-1 flex-col px-3 sm:px-4 pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-4">
-        <AnimatePresence mode="wait">
+      {/* Step content */}
+      <div className="flex flex-1 flex-col overflow-hidden px-5 pb-6">
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={step}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="flex flex-1 flex-col"
+            initial={{ opacity: 0, x: direction * 32 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: direction * -32 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="flex flex-1 flex-col pt-6"
           >
+
+            {/* Step 0 — Health goal */}
             {step === 0 && (
-              <StepShell title="What's your health goal for today?">
-                <ul className="mt-2 space-y-2">
-                  {HEALTH_GOALS.map((g) => {
-                    const selected = healthGoal === g;
-                    return (
-                      <li key={g}>
-                        <button
-                          type="button"
-                          onClick={() => setHealthGoal(g)}
-                          className={cn(
-                            "flex w-full items-center gap-3 rounded-[var(--radius-lg)] border px-4 py-3.5 text-left text-[var(--text-sm)] transition-colors",
-                            selected
-                              ? "border-[var(--color-accent-green)] bg-[var(--color-accent-green-light)] text-[var(--color-primary)]"
-                              : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)]",
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2",
-                              selected
-                                ? "border-[var(--color-accent-green)] bg-[var(--color-accent-green)] text-white"
-                                : "border-[var(--color-border-strong)]",
-                            )}
-                          >
-                            {selected ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
-                          </span>
-                          {g}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </StepShell>
-            )}
-
-            {step === 1 && (
-              <StepShell title="What's your official gender?">
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  {(
-                    [
-                      { id: "male" as const, label: "Male", art: "♂" },
-                      { id: "female" as const, label: "Female", art: "♀" },
-                    ] as const
-                  ).map(({ id, label, art }) => {
-                    const selected = gender === id;
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setGender(id)}
-                        className={cn(
-                          "flex flex-col items-center rounded-[var(--radius-lg)] border p-5 transition-colors",
-                          selected
-                            ? "border-[var(--color-accent-green)] bg-[var(--color-accent-green-light)]"
-                            : "border-[var(--color-border)] bg-[var(--color-surface)]",
-                        )}
-                      >
-                        <div className="mb-3 flex h-24 w-20 items-end justify-center rounded-[var(--radius-md)] bg-[var(--color-bg-secondary)] text-4xl text-[var(--color-text-secondary)]">
-                          {art}
-                        </div>
-                        <span className="text-[var(--text-sm)] font-semibold text-[var(--color-text-primary)]">
-                          {label}
-                        </span>
-                      </button>
-                    );
-                  })}
+              <StepCard icon={<Target className="h-8 w-8" strokeWidth={1.5} />} title="What brings you to Mindora?" subtitle="Choose the goal that matters most to you right now.">
+                <div className="flex flex-col gap-2">
+                  {HEALTH_GOALS.map((g) => (
+                    <Chip key={g} label={g} selected={healthGoal === g} onClick={() => setHealthGoal(g)} />
+                  ))}
                 </div>
-              </StepShell>
+              </StepCard>
             )}
 
+            {/* Step 1 — Gender */}
+            {step === 1 && (
+              <StepCard icon={<User className="h-8 w-8" strokeWidth={1.5} />} title="How do you identify?" subtitle="This helps us personalise your experience.">
+                <div className="flex flex-col gap-2">
+                  {["Female", "Male", "Non-binary", "Prefer not to say"].map((g) => (
+                    <Chip key={g} label={g} selected={gender === g} onClick={() => setGender(g)} />
+                  ))}
+                </div>
+              </StepCard>
+            )}
+
+            {/* Step 2 — Age */}
             {step === 2 && (
-              <StepShell title="What's your age?">
-                <div className="mt-6 flex flex-col items-center">
-                  <div className="flex h-28 w-28 items-center justify-center rounded-full border-4 border-[var(--color-accent-green)] bg-[var(--color-accent-green-light)] text-[2.5rem] font-bold text-[var(--color-primary)]">
-                    {age}
+              <StepCard icon={<Sparkles className="h-8 w-8" strokeWidth={1.5} />} title="How old are you?" subtitle="We need this to provide age-appropriate support.">
+                <div className="flex flex-col items-center gap-6">
+                  <div className="flex h-28 w-28 items-center justify-center rounded-3xl bg-[var(--color-accent-green-light)]">
+                    <span className="text-4xl font-bold text-[var(--color-primary)]">{age}</span>
                   </div>
                   <input
                     type="range"
                     min={13}
-                    max={100}
+                    max={90}
                     value={age}
                     onChange={(e) => setAge(Number(e.target.value))}
-                    className="mt-8 w-full accent-[var(--color-accent-green)]"
+                    className="w-full max-w-xs accent-[var(--color-accent-green)]"
                   />
-                  <div className="mt-2 flex w-full justify-between text-[11px] text-[var(--color-text-muted)]">
-                    <span>13</span>
-                    <span>100</span>
+                  <div className="flex w-full max-w-xs justify-between text-xs text-[var(--color-text-muted)]">
+                    <span>13</span><span>90</span>
                   </div>
                 </div>
-              </StepShell>
+              </StepCard>
             )}
 
+            {/* Step 3 — Current mood */}
             {step === 3 && (
-              <StepShell title="What's your weight?">
-                <div className="mt-6 flex flex-col items-center">
-                  <p className="text-[2rem] font-bold text-[var(--color-primary)]">
-                    {weightKg}
-                    <span className="text-[var(--text-lg)] font-semibold text-[var(--color-text-secondary)]">
-                      {" "}
-                      kg
-                    </span>
-                  </p>
-                  <input
-                    type="range"
-                    min={30}
-                    max={200}
-                    value={weightKg}
-                    onChange={(e) => setWeightKg(Number(e.target.value))}
-                    className="mt-6 w-full accent-[var(--color-accent-green)]"
-                  />
-                  <div className="mt-2 flex w-full justify-between text-[11px] text-[var(--color-text-muted)]">
-                    <span>30 kg</span>
-                    <span>200 kg</span>
+              <StepCard icon={<Smile className="h-8 w-8" strokeWidth={1.5} />} title="How are you feeling right now?" subtitle="Slide to choose your current emotional state.">
+                <div className="flex flex-col items-center gap-6">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-3xl" style={{ backgroundColor: `${moodColor}20` }}>
+                    <span className="text-base font-bold" style={{ color: moodColor }}>{moodLabel}</span>
                   </div>
-                </div>
-              </StepShell>
-            )}
-
-            {step === 4 && (
-              <StepShell title="How would you describe your mood?">
-                <div className="mt-4 flex flex-col items-center">
-                  <div className="text-6xl" aria-hidden>
-                    {moodEmoji}
-                  </div>
-                  <div className="relative mt-8 w-full px-2">
+                  <div className="relative w-full max-w-sm">
                     <div
-                      className="h-3 w-full rounded-full"
-                      style={{
-                        background:
-                          "linear-gradient(90deg, var(--color-accent-orange), var(--mood-neutral), var(--color-accent-green))",
-                      }}
+                      className="absolute inset-y-0 left-0 my-auto h-2 rounded-full transition-all"
+                      style={{ width: `${mood}%`, background: `linear-gradient(to right, #7B6EC8, ${moodColor})` }}
                     />
+                    <div className="absolute inset-y-0 left-0 right-0 my-auto h-2 rounded-full bg-[var(--color-border)]" style={{ zIndex: -1 }} />
                     <input
                       type="range"
                       min={0}
                       max={100}
                       value={mood}
                       onChange={(e) => setMood(Number(e.target.value))}
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                    />
-                    <div
-                      className="pointer-events-none absolute top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[var(--color-surface)] shadow-md"
-                      style={{ left: `calc(${mood}% * 0.96 + 2%)` }}
+                      className="relative w-full cursor-pointer appearance-none bg-transparent h-8"
+                      style={{ ["--thumb-color" as string]: moodColor }}
                     />
                   </div>
+                  <style>{`input[type="range"]::-webkit-slider-thumb { background-color: var(--thumb-color, #5BAD6F); width: 28px; height: 28px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.2); appearance: none; cursor: pointer; }`}</style>
                 </div>
-              </StepShell>
+              </StepCard>
             )}
 
+            {/* Step 4 — Professional help */}
+            {step === 4 && (
+              <StepCard icon={<Heart className="h-8 w-8" strokeWidth={1.5} />} title="Are you currently seeing a mental health professional?" subtitle="Therapist, counsellor, psychiatrist, etc.">
+                <YesNo value={professionalHelp} onChange={setProfessionalHelp} />
+              </StepCard>
+            )}
+
+            {/* Step 5 — Physical distress */}
             {step === 5 && (
-              <StepShell title="Have you sought professional help before?">
-                <div className="mt-6 flex justify-center rounded-[var(--radius-lg)] bg-[var(--color-bg-secondary)] p-6">
-                  <Stethoscope
-                    className="h-20 w-20 text-[var(--color-accent-green)]"
-                    strokeWidth={1.1}
-                  />
-                </div>
-                <YesNoRow
-                  value={professionalHelp}
-                  onChange={setProfessionalHelp}
-                  className="mt-8"
-                />
-              </StepShell>
+              <StepCard icon={<Brain className="h-8 w-8" strokeWidth={1.5} />} title="Are you experiencing any physical symptoms linked to your mental health?">
+                <YesNo value={physicalDistress} onChange={setPhysicalDistress} />
+              </StepCard>
             )}
 
+            {/* Step 6 — Body zones (only shown if physicalDistress === true) */}
             {step === 6 && (
-              <StepShell title="Are you experiencing any physical distress?">
-                <div className="mt-2 flex justify-center">
-                  <div className="relative flex h-44 w-36 items-end justify-center rounded-[var(--radius-xl)] bg-[var(--color-bg-secondary)] pb-3">
-                    <span className="text-7xl leading-none" aria-hidden>
-                      🧍
-                    </span>
-                  </div>
-                </div>
-                <YesNoRow
-                  value={physicalDistress}
-                  onChange={setPhysicalDistress}
-                  className="mt-6"
-                />
-                {physicalDistress ? (
-                  <>
-                    <p className="mt-4 text-center text-[var(--text-xs)] text-[var(--color-text-muted)]">
-                      Tap body areas where you feel discomfort.
-                    </p>
-                    <div className="mt-3 flex flex-wrap justify-center gap-2">
-                      {BODY_ZONES.map((z) => {
-                        const on = bodyZones.includes(z.id);
-                        return (
-                          <button
-                            key={z.id}
-                            type="button"
-                            onClick={() => toggleBodyZone(z.id)}
-                            className={cn(
-                              "rounded-full border px-3 py-1.5 text-[var(--text-xs)] font-medium",
-                              on
-                                ? "border-[var(--color-accent-green)] bg-[var(--color-accent-green-light)] text-[var(--color-primary)]"
-                                : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)]",
-                            )}
-                          >
-                            {z.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                ) : null}
-              </StepShell>
-            )}
-
-            {step === 7 && (
-              <StepShell title="How would you rate your sleep quality?">
-                <div className="mt-4 flex min-h-[280px] flex-1 justify-end gap-5">
-                  <div className="flex flex-1 flex-col justify-between py-1 pr-1">
-                    {[...SLEEP_LEVELS].reverse().map((lvl) => (
-                      <button
-                        key={lvl.id}
-                        type="button"
-                        onClick={() => setSleepQuality(lvl.id)}
-                        className={cn(
-                          "flex items-center gap-2 rounded-[var(--radius-md)] px-2 py-2 text-left text-[var(--text-sm)]",
-                          sleepQuality === lvl.id
-                            ? "bg-[var(--color-accent-green-light)] font-semibold text-[var(--color-primary)]"
-                            : "text-[var(--color-text-secondary)]",
-                        )}
-                      >
-                        <span className="text-lg">{lvl.emoji}</span>
-                        {lvl.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="relative h-full min-h-[240px] w-3 shrink-0 rounded-full bg-[var(--color-border)]">
-                    <div
-                      className="absolute bottom-0 left-0 right-0 rounded-full bg-[var(--color-accent-green)] transition-all duration-300"
-                      style={{
-                        height: sleepQuality
-                          ? `${((SLEEP_LEVELS.findIndex((s) => s.id === sleepQuality) + 1) / SLEEP_LEVELS.length) * 100}%`
-                          : "0%",
-                      }}
+              <StepCard icon={<Brain className="h-8 w-8" strokeWidth={1.5} />} title="Where do you feel it most?" subtitle="Select all areas that apply.">
+                <div className="flex flex-col gap-2">
+                  {BODY_ZONES.map((z) => (
+                    <Chip
+                      key={z.id}
+                      label={z.label}
+                      selected={bodyZones.includes(z.id)}
+                      onClick={() => setBodyZones((prev) => prev.includes(z.id) ? prev.filter((x) => x !== z.id) : [...prev, z.id])}
                     />
-                  </div>
+                  ))}
                 </div>
-              </StepShell>
+              </StepCard>
             )}
 
+            {/* Step 7 — Sleep quality */}
+            {step === 7 && (
+              <StepCard icon={<Moon className="h-8 w-8" strokeWidth={1.5} />} title="How has your sleep been lately?">
+                <div className="flex flex-col gap-2">
+                  {SLEEP_LEVELS.map((s) => (
+                    <Chip key={s.id} label={s.label} selected={sleepQuality === s.id} onClick={() => setSleepQuality(s.id)} />
+                  ))}
+                </div>
+              </StepCard>
+            )}
+
+            {/* Step 8 — Takes medication */}
             {step === 8 && (
-              <StepShell title="Are you taking any medications?">
-                <div className="mt-8 grid grid-cols-2 gap-3">
-                  <ChoicePill
-                    label="Yes"
-                    selected={takesMeds === true}
-                    onClick={() => setTakesMeds(true)}
-                  />
-                  <ChoicePill
-                    label="No"
-                    selected={takesMeds === false}
-                    onClick={() => setTakesMeds(false)}
-                  />
-                </div>
-              </StepShell>
+              <StepCard icon={<Pill className="h-8 w-8" strokeWidth={1.5} />} title="Are you currently taking any medications?" subtitle="Including supplements, mental health medication, or other prescriptions.">
+                <YesNo value={takesMeds} onChange={setTakesMeds} />
+              </StepCard>
             )}
 
+            {/* Step 9 — Which medications */}
             {step === 9 && (
-              <StepShell title="Please specify your medications.">
-                <div className="relative mt-2">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
-                  <input
-                    type="search"
-                    placeholder="Search medications..."
-                    value={medSearch}
-                    onChange={(e) => setMedSearch(e.target.value)}
-                    className="w-full rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] py-2.5 pl-9 pr-3 text-[var(--text-sm)] outline-none focus:border-[var(--color-border-strong)]"
-                  />
+              <StepCard icon={<Pill className="h-8 w-8" strokeWidth={1.5} />} title="Which medications?" subtitle="Select all that apply.">
+                <input
+                  value={medSearch}
+                  onChange={(e) => setMedSearch(e.target.value)}
+                  placeholder="Search medications…"
+                  className="mb-3 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--color-border-strong)]"
+                />
+                <div className="flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: "280px" }}>
+                  {filteredMeds.map((m) => (
+                    <Chip
+                      key={m}
+                      label={m}
+                      selected={selectedMeds.includes(m)}
+                      onClick={() => setSelectedMeds((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m])}
+                    />
+                  ))}
                 </div>
-                <ul className="mt-3 max-h-[45vh] space-y-1 overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-2">
-                  {filteredMeds.map((m) => {
-                    const on = selectedMeds.includes(m);
-                    return (
-                      <li key={m}>
-                        <button
-                          type="button"
-                          onClick={() => toggleMed(m)}
-                          className={cn(
-                            "flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left text-[var(--text-sm)]",
-                            on
-                              ? "bg-[var(--color-accent-green-light)] text-[var(--color-primary)]"
-                              : "hover:bg-[var(--color-bg-secondary)]",
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "flex h-5 w-5 shrink-0 items-center justify-center rounded border",
-                              on
-                                ? "border-[var(--color-accent-green)] bg-[var(--color-accent-green)] text-white"
-                                : "border-[var(--color-border-strong)]",
-                            )}
-                          >
-                            {on ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
-                          </span>
-                          {m}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </StepShell>
+              </StepCard>
             )}
 
+            {/* Step 10 — Symptoms */}
             {step === 10 && (
-              <StepShell title="Do you have other mental health symptoms?">
-                <div className="mt-4 flex justify-center">
-                  <div className="rounded-full bg-[var(--color-bg-secondary)] p-6 text-4xl">🤕</div>
-                </div>
-                <div className="mt-6 flex flex-wrap gap-2">
-                  {SYMPTOM_CHIPS.map((s) => {
-                    const on = symptoms.includes(s);
-                    return (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => toggleSymptom(s)}
-                        className={cn(
-                          "rounded-full border px-3 py-2 text-[var(--text-sm)]",
-                          on
-                            ? "border-[var(--color-accent-green)] bg-[var(--color-accent-green-light)] font-medium text-[var(--color-primary)]"
-                            : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)]",
-                        )}
-                      >
-                        {s}
-                      </button>
-                    );
-                  })}
-                </div>
-              </StepShell>
-            )}
-
-            {step === 11 && (
-              <StepShell title="How would you rate your stress level?">
-                <p className="mt-4 text-center text-[3rem] font-bold text-[var(--color-accent-orange)]">
-                  {stress}
-                </p>
-                <div className="mt-6 flex justify-between gap-1 px-1">
-                  {[1, 2, 3, 4, 5].map((n) => (
+              <StepCard icon={<Sparkles className="h-8 w-8" strokeWidth={1.5} />} title="What are you experiencing?" subtitle="Select everything that resonates with you.">
+                <div className="flex flex-wrap gap-2">
+                  {SYMPTOM_CHIPS.map((s) => (
                     <button
-                      key={n}
+                      key={s}
                       type="button"
-                      onClick={() => setStress(n)}
+                      onClick={() => setSymptoms((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s])}
                       className={cn(
-                        "flex h-12 flex-1 items-center justify-center rounded-full text-[var(--text-sm)] font-semibold",
-                        stress === n
-                          ? "bg-[var(--color-accent-orange)] text-white shadow-md"
-                          : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] ring-1 ring-[var(--color-border)]",
+                        "rounded-full border-2 px-4 py-2 text-sm font-semibold transition-all",
+                        symptoms.includes(s)
+                          ? "border-[var(--color-accent-green)] bg-[var(--color-accent-green-light)] text-[var(--color-primary)]"
+                          : "border-[var(--color-border)] bg-white text-[var(--color-text-secondary)]",
                       )}
                     >
-                      {n}
+                      {s}
                     </button>
                   ))}
                 </div>
-              </StepShell>
-            )}
 
-            {step === 12 && (
-              <StepShell title="AI Sound Analysis">
-                <div className="mt-4 flex flex-1 flex-col items-center">
-                  <div className="relative flex h-40 w-40 items-center justify-center">
-                    {[1, 2, 3].map((ring) => (
-                      <div
-                        key={ring}
-                        className="absolute rounded-full border border-[var(--color-accent-green)] opacity-40"
-                        style={{
-                          width: `${ring * 33}%`,
-                          height: `${ring * 33}%`,
-                          animation: recording ? `pulse ${1 + ring * 0.15}s ease-in-out infinite` : "none",
-                        }}
-                      />
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => (recording ? stopRecording() : void startRecording())}
-                      className={cn(
-                        "relative z-10 flex h-20 w-20 items-center justify-center rounded-full text-white shadow-lg",
-                        recording ? "bg-[var(--color-danger)]" : "bg-[var(--color-accent-green)]",
-                      )}
-                      aria-label={recording ? "Stop recording" : "Start recording"}
-                    >
-                      {recording ? (
-                        <MicOff className="h-9 w-9" strokeWidth={1.75} />
-                      ) : (
-                        <Mic className="h-9 w-9" strokeWidth={1.75} />
-                      )}
-                    </button>
-                  </div>
-                  <p className="mt-4 text-center text-[var(--text-xs)] text-[var(--color-text-muted)]">
-                    {format(new Date(), "h:mm a")} · Tap the mic to{" "}
-                    {recording ? "stop recording" : "record"} a short note.
+                {/* Stress level at the bottom of the last step */}
+                <div className="mt-8">
+                  <p className="mb-3 text-sm font-semibold text-[var(--color-text-secondary)]">
+                    Overall stress level right now
                   </p>
-                  <label className="mt-6 w-full">
-                    <span className="mb-1 block text-[var(--text-sm)] text-[var(--color-text-secondary)]">
-                      Transcript
-                    </span>
-                    <textarea
-                      value={voiceTranscript}
-                      onChange={(e) => setVoiceTranscript(e.target.value)}
-                      placeholder="After recording, a transcript appears here. You can also type to continue."
-                      rows={4}
-                      className="w-full resize-none rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-[var(--text-sm)] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-border-strong)]"
-                    />
-                  </label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setStress(v)}
+                        className={cn(
+                          "flex flex-1 flex-col items-center justify-center rounded-2xl border-2 py-3 text-xs font-bold transition-all",
+                          stress === v
+                            ? "border-transparent text-white"
+                            : "border-[var(--color-border)] bg-white text-[var(--color-text-muted)]",
+                        )}
+                        style={stress === v ? { backgroundColor: stressColors[v], borderColor: stressColors[v] } : {}}
+                      >
+                        <span className="text-lg font-bold">{v}</span>
+                        <span className="text-[9px] leading-tight">{stressLabels[v]}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </StepShell>
+              </StepCard>
             )}
 
-            {step === 13 && (
-              <StepShell title="Expression Analysis">
-                <div className="relative mt-2 aspect-[3/4] w-full overflow-hidden rounded-[var(--radius-lg)] bg-black">
-                  <video
-                    ref={videoRef}
-                    className="h-full w-full object-cover"
-                    playsInline
-                    muted
-                  />
-                  {!cameraOn ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)]">
-                      <Video className="h-10 w-10" strokeWidth={1.25} />
-                      <span className="px-4 text-center text-[var(--text-sm)]">
-                        Camera unavailable — preview mode
-                      </span>
-                    </div>
-                  ) : null}
-                  <div
-                    className="pointer-events-none absolute inset-[12%] border-2 border-dashed border-white/80"
-                    style={{ borderRadius: "42% 42% 48% 48%" }}
-                  />
-                </div>
-                <p className="mt-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-[var(--text-sm)] text-[var(--color-text-secondary)]">
-                  {voiceTranscript || "I feel lonely... with all my heart."}
-                </p>
-              </StepShell>
-            )}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-t border-[var(--color-border)] bg-[#FAF8F4]/98 px-4 py-3 backdrop-blur-sm pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <Button
+      {/* Bottom CTA */}
+      <div className="px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3">
+        <button
           type="button"
-          fullWidth
-          disabled={!canContinue}
           onClick={goNext}
-          className="h-12 rounded-[var(--radius-lg)] text-[var(--text-base)] font-semibold disabled:opacity-40"
+          disabled={!canContinue}
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] py-4 text-sm font-bold text-white shadow-lg transition-all disabled:opacity-40 active:scale-[0.98]"
         >
-          {step === TOTAL - 1 ? "Finish" : "Continue"}
-        </Button>
+          {step === TOTAL_STEPS - 1 ? (
+            <>
+              <CheckCircle2 className="h-5 w-5" strokeWidth={2} />
+              Complete Assessment
+            </>
+          ) : (
+            <>
+              Continue
+              <ArrowRight className="h-5 w-5" strokeWidth={2} />
+            </>
+          )}
+        </button>
       </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); opacity: 0.35; }
-          50% { transform: scale(1.04); opacity: 0.6; }
-        }
-      `}</style>
     </div>
   );
 }
-
-function StepShell({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <>
-      <h2 className="text-center text-[1.05rem] font-semibold leading-snug text-[var(--color-text-primary)]">
-        {title}
-      </h2>
-      <div className="mt-2 flex flex-1 flex-col">{children}</div>
-    </>
-  );
-}
-
-function YesNoRow({
-  value,
-  onChange,
-  className,
-}: {
-  value: boolean | null;
-  onChange: (v: boolean) => void;
-  className?: string;
-}) {
-  return (
-    <div className={cn("grid grid-cols-2 gap-3", className)}>
-      <ChoicePill label="Yes" selected={value === true} onClick={() => onChange(true)} />
-      <ChoicePill label="No" selected={value === false} onClick={() => onChange(false)} />
-    </div>
-  );
-}
-
-function ChoicePill({
-  label,
-  selected,
-  onClick,
-}: {
-  label: string;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "rounded-[var(--radius-lg)] py-4 text-center text-[var(--text-base)] font-semibold transition-colors",
-        selected
-          ? "bg-[var(--color-accent-green)] text-white shadow-sm"
-          : "bg-[var(--color-surface)] text-[var(--color-text-primary)] ring-1 ring-[var(--color-border)]",
-      )}
-    >
-      {label}
-    </button>
-  );
-}
-
