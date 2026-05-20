@@ -1,6 +1,6 @@
 import { format, formatDistanceToNow } from "date-fns";
-import { Link, useNavigate } from "react-router-dom";
-import { BarChart2, ChevronLeft, Play, Wind } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ChevronLeft, Play, Wind } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { useMindfulSessions } from "@/hooks/useMindfulSessions";
 import { useUiStore } from "@/store/uiStore";
@@ -12,18 +12,6 @@ export function MindfulHoursScreen() {
 
   const totalMinutes = sessions.reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
   const totalHours = (totalMinutes / 60).toFixed(1);
-
-  const todaySessions = sessions.filter((s) => {
-    const d = new Date(s.created_at);
-    const today = new Date();
-    return (
-      d.getFullYear() === today.getFullYear() &&
-      d.getMonth() === today.getMonth() &&
-      d.getDate() === today.getDate()
-    );
-  });
-  const todayMinutes = todaySessions.reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
-  const todayHours = (todayMinutes / 60).toFixed(1);
 
   const recentSessions = [...sessions].slice(0, 10);
 
@@ -45,32 +33,16 @@ export function MindfulHoursScreen() {
       </header>
 
       <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-6 lg:px-8 lg:pt-6">
-        {/* Left: hero + start */}
+        {/* Left: total + start */}
         <div>
-          {/* Hero card — "+" replaced with Stats button */}
-          <div className="relative mx-4 mt-4 overflow-hidden rounded-[var(--radius-xl)] bg-[#3a3a3a] px-6 pb-16 pt-10 text-center text-white lg:mx-0 lg:mt-0">
-            <div
-              className="pointer-events-none absolute inset-0 opacity-20"
-              style={{ background: "radial-gradient(circle at 20% 30%, #fff 0 2px, transparent 3px) 0 0/40px 40px" }}
-            />
-            <Wind className="mx-auto h-10 w-10 text-white/60" strokeWidth={1.25} />
-            <p className="mt-3 text-5xl font-bold tabular-nums">{todayHours}h</p>
-            <p className="mt-1 text-sm text-white/70">Mindful Hours Today</p>
-            <p className="mt-0.5 text-xs text-white/50">Total: {totalHours}h all-time</p>
-
-            {/* Stats button replaces the "+" icon */}
-            <Link
-              to="/mindful/stats"
-              className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/30"
-              aria-label="View mindful stats"
-            >
-              <BarChart2 className="h-4 w-4" strokeWidth={1.75} />
-              Stats
-            </Link>
+          {/* Clean total header */}
+          <div className="mx-4 mt-6 text-center lg:mx-0 lg:mt-0">
+            <p className="text-5xl font-bold tabular-nums text-[var(--color-primary)]">{totalHours}h</p>
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">Total</p>
           </div>
 
           {/* Start Session button */}
-          <div className="mx-4 mt-4 lg:mx-0">
+          <div className="mx-4 mt-6 lg:mx-0">
             <button
               type="button"
               onClick={() => navigate("/mindful/exercise")}

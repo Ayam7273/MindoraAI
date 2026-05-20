@@ -5,22 +5,13 @@ import { Button } from "@/components/ui/Button";
 import { CrisisBanner } from "@/components/ui/CrisisBanner";
 import { Sheet } from "@/components/ui/Sheet";
 import { streamAIResponse } from "@/lib/aiService";
-import {
-  type ChatMessage,
-  getConversation,
-  updateConversation,
-  deleteConversation,
-} from "@/lib/chatStorage";
+import type { ChatMessage } from "@/lib/chatStorage";
+import { useChatbotMessages, useAddMessage } from "@/hooks/useChatbotMessages";
+import { useDeleteConversation } from "@/hooks/useChatbotConversations";
+import { useUiStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
 
-const SEED: ChatMessage[] = [
-  {
-    id: "seed-1",
-    role: "ai",
-    text: "Hello, I'm Mindora. I'm here to listen and support you. How are you feeling today?",
-    timestamp: new Date().toISOString(),
-  },
-];
+const SEED_TEXT = "Hello, I'm Mindora. I'm here to listen and support you. How are you feeling today?";
 
 function hasCrisisKeywords(text: string): boolean {
   const t = text.toLowerCase();
@@ -34,73 +25,110 @@ function hasCrisisKeywords(text: string): boolean {
   );
 }
 
+/** Map a DB row to the local ChatMessage shape used by the UI and streamAIResponse. */
+function rowToMsg(row: { id: string; role: string; content: string; created_at: string }): ChatMessage {
+  return {
+    id: row.id,
+    role: row.role === "assistant" ? "ai" : "user",
+    text: row.content,
+    timestamp: row.created_at,
+  };
+}
+
 export function ChatConversationScreen() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    if (!id) return SEED;
-    const saved = getConversation(id);
-    return saved?.messages?.length ? saved.messages : SEED;
-  });
+  const userId = useUiStore((s) => s.user?.id);
+
+  // Supabase queries / mutations
+  const { data: dbMessages = [], isLoading } = useChatbotMessages(id);
+  const addMessage = useAddMessage();
+  const deleteConversation = useDeleteConversation();
+
+  // Local streaming state — ephemeral, never persisted to DB until streaming is done
+  const [streamingText, setStreamingText] = useState<string | null>(null);
   const [input, setInput] = useState("");
-  const [streaming, setStreaming] = useState(false);
   const [showCrisis, setShowCrisis] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Map DB rows to ChatMessage for use with streamAIResponse history
+  const persistedMessages: ChatMessage[] = dbMessages.map(rowToMsg);
+
+  // Full message list shown in the UI: seed when empty + persisted + optional streaming bubble
+  const displayMessages: ChatMessage[] = (() => {
+    const base =
+      persistedMessages.length === 0 && !isLoading
+        ? [
+            {
+              id: "seed-1",
+              role: "ai" as const,
+              text: SEED_TEXT,
+              timestamp: new Date().toISOString(),
+            },
+          ]
+        : persistedMessages;
+
+    if (streamingText !== null) {
+      return [
+        ...base,
+        {
+          id: "streaming",
+          role: "ai" as const,
+          text: streamingText,
+          timestamp: new Date().toISOString(),
+        },
+      ];
+    }
+    return base;
+  })();
+
+  const streaming = streamingText !== null;
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, streaming]);
-
-  // Persist messages whenever they change
-  useEffect(() => {
-    if (id) updateConversation(id, messages);
-  }, [messages, id]);
+  }, [displayMessages, streaming]);
 
   const send = useCallback(async () => {
     const text = input.trim();
-    if (!text || streaming) return;
+    if (!text || streaming || !id) return;
 
     if (hasCrisisKeywords(text)) setShowCrisis(true);
 
-    const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      text,
-      timestamp: new Date().toISOString(),
-    };
-
-    const nextMessages = [...messages, userMsg];
-    setMessages(nextMessages);
     setInput("");
-    setStreaming(true);
 
-    const aiId = crypto.randomUUID();
-    const aiMsg: ChatMessage = {
-      id: aiId,
-      role: "ai",
-      text: "",
-      timestamp: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, aiMsg]);
+    // 1. Persist the user message to Supabase immediately
+    await addMessage.mutateAsync({ conversation_id: id, role: "user", content: text });
 
+    // Build history for the AI (persisted + the new user msg we just added)
+    const historyForAI: ChatMessage[] = [
+      ...persistedMessages,
+      { id: crypto.randomUUID(), role: "user", text, timestamp: new Date().toISOString() },
+    ];
+
+    // 2. Stream the AI response
+    setStreamingText("");
     abortRef.current = new AbortController();
+    let fullText = "";
 
     try {
-      for await (const chunk of streamAIResponse(nextMessages, abortRef.current.signal)) {
-        setMessages((prev) =>
-          prev.map((m) => (m.id === aiId ? { ...m, text: m.text + chunk } : m)),
-        );
+      for await (const chunk of streamAIResponse(historyForAI, abortRef.current.signal)) {
+        fullText += chunk;
+        setStreamingText(fullText);
       }
     } catch {
-      // aborted or network error — leave partial message
+      // aborted or network error — leave whatever partial text we got
     } finally {
-      setStreaming(false);
       abortRef.current = null;
+      setStreamingText(null);
+
+      // 3. Persist the completed AI response (only if we got something)
+      if (fullText && id) {
+        await addMessage.mutateAsync({ conversation_id: id, role: "assistant", content: fullText });
+      }
     }
-  }, [input, messages, streaming]);
+  }, [input, streaming, id, persistedMessages, addMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -110,7 +138,9 @@ export function ChatConversationScreen() {
   };
 
   function handleDelete() {
-    if (id) deleteConversation(id);
+    if (id && userId) {
+      deleteConversation.mutate({ id, userId });
+    }
     navigate("/chatbot", { replace: true });
   }
 
@@ -160,7 +190,7 @@ export function ChatConversationScreen() {
       )}
 
       <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-4">
-        {messages.map((msg) => (
+        {displayMessages.map((msg) => (
           <div
             key={msg.id}
             className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}
@@ -193,7 +223,6 @@ export function ChatConversationScreen() {
       <div className="border-t border-[var(--color-border)] bg-white px-3 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] chat-input-bar">
         <div className="flex items-end gap-2 rounded-2xl bg-[var(--color-bg-secondary)] px-3 py-2">
           <textarea
-            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -225,7 +254,7 @@ export function ChatConversationScreen() {
       <Sheet open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete This Conversation?">
         <div className="space-y-3">
           <p className="text-sm text-[var(--color-text-secondary)]">
-            This will permanently remove this conversation from your device.
+            This will permanently remove this conversation and all its messages.
           </p>
           <div className="flex gap-2">
             <Button

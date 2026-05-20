@@ -25,29 +25,33 @@
   box-sizing: border-box;
 }
 
-/* Filter chip row — always horizontal scroll, never wraps */
+/* Filter chip row — horizontal scroll at ALL sizes, never wraps */
 .community-filter-chips {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
   padding-bottom: 4px;
   width: 100%;
   max-width: 100%;
+  /* Ensure the row itself never triggers vertical clipping */
+  min-height: 36px;
 }
 
 .community-filter-chips::-webkit-scrollbar { display: none; }
 
 /* Every filter chip never shrinks below its label width */
 .community-filter-chips button {
-  flex-shrink: 0;
-  white-space: nowrap;
-  display: inline-flex;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
+  min-width: max-content;
 }
 
 /* Feed: always fills width, never overflows viewport */
@@ -109,11 +113,22 @@
   }
 
   .community-header-inner {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: space-between;
     padding: 10px 14px;
     gap: 10px;
+    overflow: visible;       /* never clip the notification badge */
+    min-height: 52px;
+  }
+
+  /* The right div (holds bell) must not collapse */
+  .community-header-inner > div:last-child {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    overflow: visible;
   }
 
   /* "Community / Mindora AI" text block */
@@ -136,15 +151,20 @@
     font-size: 12px;
   }
 
-  /* Notification bell button */
-  .community-header-inner a,
+  /* Notification bell — the Link renders as <a>, must be explicitly flex */
+  .community-header-inner > div:last-child a,
   .community-header-inner > div:last-child button {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
     width: 36px;
     height: 36px;
     min-width: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-shrink: 0;
+    position: relative;   /* needed for the unread badge absolute positioning */
+    overflow: visible;    /* let the badge poke out */
+    border-radius: 9999px;
+    background-color: rgba(255,255,255,0.1);
   }
 
   /* ── 3. Filter tag chips ─────────────────────────────────── */
@@ -507,15 +527,18 @@
     font-size: 9px;
   }
 
-  /* Notification icon */
-  .community-header-inner a,
+  /* Notification bell at 500px */
+  .community-header-inner > div:last-child a,
   .community-header-inner > div:last-child button {
+    display: flex !important;
     width: 32px;
     height: 32px;
     min-width: 32px;
+    overflow: visible;
+    position: relative;
   }
 
-  .community-header-inner a svg,
+  .community-header-inner > div:last-child a svg,
   .community-header-inner > div:last-child button svg {
     width: 15px;
     height: 15px;

@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { MindoraLogo } from "@/components/brand/MindoraLogo";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { signIn, signInWithGoogle } from "@/services/authService";
+import { friendlyAuthError, signIn, signInWithGoogle } from "@/services/authService";
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -30,13 +30,15 @@ export function SignInScreen() {
     if (!email.trim() || !password) return;
     setBusy(true);
     setError(null);
-    const { error: err } = await signIn(email.trim(), password);
-    setBusy(false);
-    if (err) {
-      setError(err.message);
-      return;
+    try {
+      const { error: err } = await signIn(email.trim(), password);
+      if (err) { setError(friendlyAuthError(err)); return; }
+      navigate("/home", { replace: true });
+    } catch (e) {
+      setError(friendlyAuthError(e));
+    } finally {
+      setBusy(false);
     }
-    navigate("/home", { replace: true });
   };
 
   const inputWrap =
@@ -144,8 +146,12 @@ export function SignInScreen() {
                 aria-label="Continue with Google"
                 onClick={async () => {
                   setError(null);
-                  const { error: err } = await signInWithGoogle();
-                  if (err) setError(err.message);
+                  try {
+                    const { error: err } = await signInWithGoogle();
+                    if (err) setError(friendlyAuthError(err));
+                  } catch (e) {
+                    setError(friendlyAuthError(e));
+                  }
                 }}
                 className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-[var(--shadow-sm)] ring-1 ring-[var(--color-border)] transition-transform active:scale-95"
               >

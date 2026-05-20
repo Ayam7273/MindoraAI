@@ -1,21 +1,44 @@
-﻿import { useState } from "react";
-import { ChevronLeft, Leaf, Video } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, Camera, Circle, StopCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { useAddStressEntry } from "@/hooks/useStressEntries";
 import { useUpdateMindoraScore } from "@/hooks/useMindoraScoreHistory";
 import { computeMindoraScore } from "@/lib/mindoraScoreModel";
 import { hapticSuccess } from "@/lib/haptics";
 import { useUiStore } from "@/store/uiStore";
-const BUBBLES = [
-  { id: "Loneliness", size: "large", x: 42, y: 38 },
-  { id: "Work", size: "sm", x: 18, y: 22 },
-  { id: "Kids", size: "sm", x: 72, y: 20 },
-  { id: "Finance", size: "sm", x: 70, y: 58 },
-  { id: "Life", size: "sm", x: 22, y: 58 },
-  { id: "Relationship", size: "sm", x: 48, y: 12 },
+import { genAI } from "@/lib/gemini";
+
+// ─── constants ────────────────────────────────────────────────────────────────
+
+const LEVELS = [
+  { v: 1, label: "Calm",     color: "#22c55e" },
+  { v: 2, label: "Normal",   color: "#84cc16" },
+  { v: 3, label: "Elevated", color: "#f59e0b" },
+  { v: 4, label: "Stressed", color: "#f97316" },
+  { v: 5, label: "Extreme",  color: "#ef4444" },
+] as const;
+
+const STRESSORS = [
+  "Work",
+  "Relationships",
+  "Finance",
+  "Health",
+  "Family",
+  "Loneliness",
+  "Sleep",
+  "Other",
 ];
+
+function getMeta(v: number) {
+  return LEVELS.find((l) => l.v === Math.round(v)) ?? LEVELS[2];
+}
+
+// ─── types ────────────────────────────────────────────────────────────────────
+
+type CamState = "idle" | "preview" | "recording" | "analysing" | "done" | "error";
+
+// ─── component ────────────────────────────────────────────────────────────────
 
 export function StressLogScreen() {
   const navigate = useNavigate();
@@ -23,163 +46,431 @@ export function StressLogScreen() {
   const activeMood = useUiStore((s) => s.activeMood);
   const addStress = useAddStressEntry();
   const updateMindora = useUpdateMindoraScore();
-  const [step, setStep] = useState(0);
-  const [level, setLevel] = useState(3);
-  const [selected, setSelected] = useState<string[]>(["Loneliness"]);
-  const [confirm, setConfirm] = useState(false);
 
-  const finishLog = async () => {
+  // ── form state ───────────────────────────────────────────────────────────
+  const [level, setLevel] = useState(3);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const meta = getMeta(level);
+  const fillPercent = ((level - 1) / 4) * 100;
+
+  // ── camera state ─────────────────────────────────────────────────────────
+  const [camState, setCamState] = useState<CamState>("idle");
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [camError, setCamError] = useState<string | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── cleanup on unmount ───────────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  // ── camera helpers ───────────────────────────────────────────────────────
+
+  const startPreview = useCallback(async () => {
+    setCamError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setCamState("preview");
+    } catch {
+      setCamError("Camera permission denied or unavailable.");
+      setCamState("error");
+    }
+  }, []);
+
+  const stopStream = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+  }, []);
+
+  const startRecording = useCallback(() => {
+    if (!streamRef.current) return;
+    chunksRef.current = [];
+
+    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp8")
+      ? "video/webm;codecs=vp8"
+      : "video/webm";
+
+    const recorder = new MediaRecorder(streamRef.current, { mimeType });
+    recorderRef.current = recorder;
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
+
+    recorder.onstop = () => {
+      void handleAnalyse();
+    };
+
+    recorder.start(200);
+    setCamState("recording");
+
+    // auto-stop after 10 s
+    timerRef.current = setTimeout(() => {
+      if (recorderRef.current?.state === "recording") {
+        recorderRef.current.stop();
+      }
+    }, 10_000);
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  const stopRecording = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (recorderRef.current?.state === "recording") {
+      recorderRef.current.stop();
+    }
+  }, []);
+
+  const handleAnalyse = useCallback(async () => {
+    setCamState("analysing");
+    stopStream();
+
+    const label = getMeta(level).label;
+    const prompt = `The user just recorded a 10-second face video while reporting stress level ${level}/5. Based on their self-reported stress level and common physiological stress indicators, provide a detailed stress analysis. Include: 1) Overall stress assessment, 2) Physical indicators to watch for at this stress level, 3) Three specific coping strategies tailored to ${label} stress. Be compassionate and specific.`;
+
+    if (!genAI) {
+      setAiAnalysis(
+        "AI analysis is unavailable (API key not configured). Your stress entry will still be saved."
+      );
+      setCamState("done");
+      return;
+    }
+
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const result = await model.generateContent(prompt);
+      setAiAnalysis(result.response.text());
+      setCamState("done");
+    } catch {
+      setAiAnalysis("Could not generate analysis. Please try again.");
+      setCamState("done");
+    }
+  }, [level, stopStream]);
+
+  const dismissCamera = useCallback(() => {
+    stopStream();
+    if (timerRef.current) clearTimeout(timerRef.current);
+    recorderRef.current = null;
+    setCamState("idle");
+    setAiAnalysis(null);
+    setCamError(null);
+  }, [stopStream]);
+
+  // ── save ─────────────────────────────────────────────────────────────────
+
+  const handleSave = async () => {
     if (!userId) {
       navigate("/signin", { replace: true });
       return;
     }
-    await addStress.mutateAsync({
-      user_id: userId,
-      stress_level: level,
-      stressors: selected,
-      life_impact: "Very High",
-    });
-    const mood = activeMood ?? "neutral";
-    const score = computeMindoraScore({
-      mood,
-      sleepHours: 7,
-      stressLevel: level,
-      journalStreakDays: 0,
-    });
-    await updateMindora.mutateAsync({ userId, score, reason: "Stress log" });
-    hapticSuccess();
-    setConfirm(true);
+    setSaving(true);
+    try {
+      await addStress.mutateAsync({
+        user_id: userId,
+        stress_level: level,
+        stressors: selected.length > 0 ? selected : null,
+        life_impact: meta.label,
+      });
+      const mood = activeMood ?? "neutral";
+      const score = computeMindoraScore({
+        mood,
+        sleepHours: 7,
+        stressLevel: level,
+        journalStreakDays: 0,
+      });
+      await updateMindora.mutateAsync({ userId, score, reason: "Stress log" });
+      hapticSuccess();
+      navigate("/stress", { replace: true });
+    } catch {
+      setSaving(false);
+    }
   };
 
-  if (confirm) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-black/50 px-4">
-        <Card className="w-full max-w-sm p-6 text-center shadow-xl">
-          <div className="flex justify-center">
-            <Leaf className="h-10 w-10 text-[var(--color-accent-green)]" strokeWidth={1.5} />
-          </div>
-          <h2 className="mt-4 text-lg font-bold text-[var(--color-primary)]">Stress Level Set to {level}</h2>
-          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-            Logged to your journal and shared with Mindora AI .
-          </p>
-          <Button type="button" fullWidth className="mt-6 rounded-full" onClick={() => navigate("/stress")}>
-            Got it, thanks!
-          </Button>
-        </Card>
-      </div>
+  // ── toggle stressor ───────────────────────────────────────────────────────
+
+  const toggleStressor = (s: string) =>
+    setSelected((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
     );
-  }
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-dvh bg-[#FAF8F4] pb-28">
-      <header className="flex items-center border-b border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-2">
-        <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full">
-          <ChevronLeft className="h-6 w-6" />
+    <div className="min-h-dvh bg-[#FAF8F4] pb-36">
+      {/* ── Header ── */}
+      <header
+        className="flex items-center px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-white"
+        style={{ backgroundColor: "#3B2A1A" }}
+      >
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15"
+          aria-label="Back"
+        >
+          <ChevronLeft className="h-6 w-6" strokeWidth={2} />
         </button>
-        <span className="flex-1 text-center text-sm font-semibold text-[var(--color-primary)]">
-          Log stress · Step {step + 1}/3
-        </span>
+        <h1 className="flex-1 text-center text-base font-semibold">Log Stress</h1>
         <span className="w-10" />
       </header>
 
-      {step === 0 && (
-        <div className="px-4 pt-8">
-          <h1 className="text-center text-xl font-bold text-[var(--color-primary)]">What&apos;s your stress level today?</h1>
-          <div className="relative mx-auto mt-10 flex h-64 w-48 items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-[3px] border-dashed border-[var(--color-border)]" />
-            <div className="text-center">
-              <p className="text-5xl font-bold text-[var(--color-primary)]">{level}</p>
-              <p className="text-sm text-[var(--color-text-muted)]">Moderate</p>
-            </div>
+      <div className="space-y-5 px-4 pt-6">
+        {/* ── Stress Level Slider ── */}
+        <section className="rounded-2xl bg-white p-5 shadow-sm">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            Stress Level
+          </p>
+          {/* Big level display */}
+          <div className="flex items-end justify-center gap-3 py-4">
+            <p
+              className="text-8xl font-black tabular-nums leading-none transition-colors"
+              style={{ color: meta.color }}
+            >
+              {level}
+            </p>
+            <p
+              className="mb-2 text-2xl font-bold transition-colors"
+              style={{ color: meta.color }}
+            >
+              {meta.label}
+            </p>
+          </div>
+
+          {/* Styled range input */}
+          <div className="relative mt-2 h-8 flex items-center">
+            <div className="absolute inset-y-0 left-0 right-0 my-auto h-3 rounded-full bg-gray-100" />
+            <div
+              className="absolute inset-y-0 left-0 my-auto h-3 rounded-full transition-all duration-200"
+              style={{
+                width: `${fillPercent}%`,
+                background: `linear-gradient(to right, #22c55e, ${meta.color})`,
+              }}
+            />
             <input
               type="range"
               min={1}
               max={5}
+              step={1}
               value={level}
               onChange={(e) => setLevel(Number(e.target.value))}
-              className="absolute -right-8 h-48 w-48 appearance-none bg-transparent opacity-0"
-              style={{ writingMode: "vertical-rl" as const }}
+              className="relative z-10 h-full w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-lg [&::-moz-range-thumb]:h-8 [&::-moz-range-thumb]:w-8 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-4 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-lg"
+              style={{ ["--thumb-color" as string]: meta.color }}
+              aria-label="Stress level"
+              aria-valuetext={meta.label}
             />
-            <div className="absolute -right-2 top-0 flex h-full w-8 flex-col justify-between py-2">
-              {[5, 4, 3, 2, 1].map((n) => (
-                <span key={n} className="text-[10px] text-[var(--color-text-muted)]">
-                  {n}
-                </span>
-              ))}
-            </div>
           </div>
-          <input
-            type="range"
-            min={1}
-            max={5}
-            value={level}
-            onChange={(e) => setLevel(Number(e.target.value))}
-            className="mx-auto mt-8 block w-full max-w-xs accent-[var(--color-accent-orange)]"
-          />
-          <Button type="button" fullWidth className="mt-10 rounded-full" onClick={() => setStep(1)}>
-            Continue →
-          </Button>
-        </div>
-      )}
+          <div className="mt-2 flex justify-between text-[10px] font-medium text-gray-400">
+            {LEVELS.map((l) => (
+              <button
+                key={l.v}
+                type="button"
+                onClick={() => setLevel(l.v)}
+                className="transition-colors"
+                style={{ color: l.v === level ? meta.color : undefined }}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        </section>
 
-      {step === 1 && (
-        <div className="px-4 pt-6">
-          <h1 className="text-xl font-bold text-[var(--color-primary)]">Select Stressors</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Tap bubbles — largest is your primary stressor.</p>
-          <div className="relative mx-auto mt-6 h-56 max-w-sm rounded-[var(--radius-xl)] bg-[var(--color-bg-secondary)] p-4">
-            {BUBBLES.map((b) => {
-              const on = selected.includes(b.id);
-              const large = b.size === "large";
+        {/* ── Stressor Chips ── */}
+        <section className="rounded-2xl bg-white p-5 shadow-sm">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            What&apos;s causing stress? (optional)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {STRESSORS.map((s) => {
+              const active = selected.includes(s);
               return (
                 <button
-                  key={b.id}
+                  key={s}
                   type="button"
-                  onClick={() =>
-                    setSelected((s) => (on ? s.filter((x) => x !== b.id) : [...s, b.id]))
-                  }
-                  className={`absolute flex items-center justify-center rounded-full font-semibold text-white shadow-md transition-transform active:scale-95 ${
-                    large ? "h-24 w-24 text-sm" : "h-14 w-14 text-[10px]"
-                  } ${on ? "bg-[var(--color-accent-green)] ring-2 ring-white" : "bg-[var(--color-text-muted)]/70"}`}
-                  style={{ left: `${b.x}%`, top: `${b.y}%`, transform: "translate(-50%, -50%)" }}
+                  onClick={() => toggleStressor(s)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all active:scale-95 ${
+                    active
+                      ? "text-white shadow"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                  style={active ? { backgroundColor: meta.color } : undefined}
                 >
-                  {b.id}
+                  {s}
                 </button>
               );
             })}
           </div>
-          <p className="mt-4 rounded-lg border border-[var(--color-accent-orange)] bg-[var(--color-accent-orange-light)] px-3 py-2 text-xs text-[var(--color-accent-orange)]">
-            Life Impact: Very High
-          </p>
-          <Button type="button" fullWidth className="mt-6 rounded-full" onClick={() => setStep(2)}>
-            Continue →
-          </Button>
-        </div>
-      )}
+        </section>
 
-      {step === 2 && (
-        <div className="flex min-h-[70vh] flex-col bg-[#3B2A1A] px-4 pb-8 pt-8 text-[#FAF8F4]">
-          <h1 className="text-xl font-bold">Record Expression</h1>
-          <ul className="mt-6 space-y-3">
-            {["Brightly Lit Room", "Clear Face Expression", "Stay Still", "720p Camera"].map((t) => (
-              <li key={t} className="flex items-center gap-3 rounded-[var(--radius-lg)] bg-white/10 px-4 py-3 text-sm">
-                <Video className="h-5 w-5 shrink-0" />
-                {t}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-auto flex flex-1 flex-col items-center justify-center">
-            <div className="flex aspect-square w-56 items-center justify-center rounded-full border-4 border-dashed border-white/50 bg-black/20">
-              <span className="text-sm text-white/80">Camera preview</span>
+        {/* ── Optional Note ── */}
+        <section className="rounded-2xl bg-white p-5 shadow-sm">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            Notes
+          </p>
+          <textarea
+            rows={3}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Anything else on your mind? (optional)"
+            className="w-full resize-none rounded-xl bg-[#FAF8F4] p-3 text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-orange-300"
+          />
+        </section>
+
+        {/* ── Face Recording Section ── */}
+        <section className="rounded-2xl bg-[#1C1411] p-5 text-white shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold">Record Face</p>
+              <p className="text-xs text-white/50">Optional — AI stress analysis</p>
             </div>
+            {camState === "idle" && (
+              <button
+                type="button"
+                onClick={() => void startPreview()}
+                className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 active:scale-95"
+              >
+                <Camera className="h-4 w-4" />
+                Open Camera
+              </button>
+            )}
+            {(camState === "preview" ||
+              camState === "recording" ||
+              camState === "analysing" ||
+              camState === "done") && (
+              <button
+                type="button"
+                onClick={dismissCamera}
+                className="text-xs text-white/50 underline"
+              >
+                Dismiss
+              </button>
+            )}
+            {camState === "error" && (
+              <button
+                type="button"
+                onClick={() => { setCamState("idle"); setCamError(null); }}
+                className="text-xs text-white/50 underline"
+              >
+                Retry
+              </button>
+            )}
           </div>
-          <Button type="button" variant="secondary" className="mt-4 rounded-full border-white/30 bg-transparent text-white" onClick={finishLog}>
-            Skip This Step ✕
-          </Button>
-          <Button type="button" className="mt-2 rounded-full bg-[var(--color-success)] text-white" onClick={finishLog}>
-            Continue →
-          </Button>
-        </div>
-      )}
+
+          {/* Camera error */}
+          {camState === "error" && camError && (
+            <p className="mt-3 rounded-xl bg-red-900/40 px-3 py-2 text-xs text-red-300">
+              {camError}
+            </p>
+          )}
+
+          {/* Live preview + controls */}
+          {(camState === "preview" || camState === "recording") && (
+            <div className="mt-4 flex flex-col items-center gap-4">
+              <div className="relative h-48 w-48 overflow-hidden rounded-full border-4 border-white/80 shadow-xl">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="h-full w-full object-cover"
+                />
+                {camState === "recording" && (
+                  <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/60 px-3 py-1">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                    <span className="text-[10px] font-semibold text-white">REC</span>
+                  </div>
+                )}
+              </div>
+
+              {camState === "preview" && (
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 shadow-lg transition active:scale-95"
+                  aria-label="Start recording"
+                >
+                  <Circle className="h-8 w-8 fill-white text-white" />
+                </button>
+              )}
+
+              {camState === "recording" && (
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-red-600 shadow-lg transition active:scale-95"
+                  aria-label="Stop recording"
+                >
+                  <StopCircle className="h-8 w-8 text-white" />
+                </button>
+              )}
+
+              <p className="text-xs text-white/40">
+                {camState === "preview"
+                  ? "Press the red button to start (max 10 s)"
+                  : "Recording… press to stop"}
+              </p>
+            </div>
+          )}
+
+          {/* Analysing spinner */}
+          {camState === "analysing" && (
+            <div className="mt-5 flex flex-col items-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-orange-400" />
+              <p className="text-sm text-white/60">Analysing your stress…</p>
+            </div>
+          )}
+
+          {/* AI analysis card */}
+          {camState === "done" && aiAnalysis && (
+            <div className="mt-4 rounded-xl bg-white/10 p-4">
+              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-orange-300">
+                AI Analysis
+              </p>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-white/90">
+                {aiAnalysis}
+              </p>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* ── Save button ── */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#FAF8F4]/90 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm">
+        <Button
+          type="button"
+          fullWidth
+          disabled={saving}
+          className="rounded-full bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700 disabled:opacity-60"
+          onClick={() => void handleSave()}
+        >
+          {saving ? "Saving…" : "Save & Done"}
+        </Button>
+      </div>
+
+      {/* slider thumb colour */}
+      <style>{`
+        input[type="range"]::-webkit-slider-thumb {
+          background-color: var(--thumb-color, #3B2A1A);
+        }
+        input[type="range"]::-moz-range-thumb {
+          background-color: var(--thumb-color, #3B2A1A);
+          border: none;
+        }
+      `}</style>
     </div>
   );
 }

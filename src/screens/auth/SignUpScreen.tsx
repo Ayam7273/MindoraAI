@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { MindoraLogo } from "@/components/brand/MindoraLogo";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { signUp } from "@/services/authService";
+import { friendlyAuthError, signUp } from "@/services/authService";
 
 export function SignUpScreen() {
   const navigate = useNavigate();
@@ -16,19 +16,25 @@ export function SignUpScreen() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password || password.length < 6) {
-      setError("Use a valid email and a password of at least 6 characters.");
+    if (!email.trim()) {
+      setError("That doesn't look like a valid email address.");
+      return;
+    }
+    if (!password || password.length < 6) {
+      setError("Your password must be at least 6 characters long.");
       return;
     }
     setBusy(true);
     setError(null);
-    const { error: err } = await signUp(email.trim(), password);
-    setBusy(false);
-    if (err) {
-      setError(err.message);
-      return;
+    try {
+      const { error: err } = await signUp(email.trim(), password);
+      if (err) { setError(friendlyAuthError(err)); return; }
+      navigate("/signin", { replace: true });
+    } catch (e) {
+      setError(friendlyAuthError(e));
+    } finally {
+      setBusy(false);
     }
-    navigate("/signin", { replace: true });
   };
 
   const inputWrap =

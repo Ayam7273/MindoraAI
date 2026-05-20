@@ -1,19 +1,23 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { BookOpen, ChevronDown, ChevronLeft, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronLeft, ChevronUp, Loader2, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
-import { deleteJournalEntry, getJournalEntries, type JournalEntry } from "@/lib/journalStorage";
+import { useJournalEntries, useDeleteJournal } from "@/hooks/useJournalEntries";
+import { useUiStore } from "@/store/uiStore";
 
 export function JournalListScreen() {
   const navigate = useNavigate();
-  const [entries, setEntries] = useState<JournalEntry[]>(getJournalEntries);
+  const userId = useUiStore((s) => s.user?.id);
+  const { data: entries = [], isLoading } = useJournalEntries(userId);
+  const deleteJournal = useDeleteJournal();
+
   const [expanded, setExpanded] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const handleDelete = (id: string) => {
-    deleteJournalEntry(id);
-    setEntries(getJournalEntries());
+  const handleDelete = async (id: string) => {
+    if (!userId) return;
+    await deleteJournal.mutateAsync({ id, user_id: userId });
     setConfirmDelete(null);
     if (expanded === id) setExpanded(null);
   };
@@ -42,7 +46,11 @@ export function JournalListScreen() {
         </button>
       </header>
 
-      {entries.length === 0 ? (
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-[var(--color-text-muted)]" />
+        </div>
+      ) : entries.length === 0 ? (
         <div className="flex flex-col items-center gap-4 px-6 py-16 text-center">
           <BookOpen className="h-12 w-12 text-[var(--color-text-muted)]" strokeWidth={1.5} />
           <p className="font-semibold text-[var(--color-primary)]">No journal entries yet</p>
@@ -68,12 +76,12 @@ export function JournalListScreen() {
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-semibold text-[var(--color-text-muted)]">
-                    {format(new Date(entry.timestamp), "EEEE, MMM d · h:mm a")}
+                    {format(new Date(entry.created_at), "EEEE, MMM d · h:mm a")}
                   </p>
                   <p className="mt-0.5 truncate font-semibold text-[var(--color-primary)]">{entry.title}</p>
                   {expanded !== entry.id && (
                     <p className="mt-1 line-clamp-2 text-xs text-[var(--color-text-secondary)]">
-                      {entry.body}
+                      {entry.content}
                     </p>
                   )}
                 </div>
@@ -87,18 +95,8 @@ export function JournalListScreen() {
               {expanded === entry.id && (
                 <div className="border-t border-[var(--color-border)] px-4 pb-4 pt-3">
                   <p className="break-words whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-text-primary)]">
-                    {entry.body}
+                    {entry.content}
                   </p>
-                  {entry.aiReflection && (
-                    <div className="mt-3 rounded-[var(--radius-lg)] bg-[var(--color-accent-green-light)] p-3">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-accent-green)]">
-                        AI Reflection
-                      </p>
-                      <p className="mt-1 text-xs italic text-[var(--color-text-secondary)]">
-                        {entry.aiReflection}
-                      </p>
-                    </div>
-                  )}
                   <div className="mt-3 flex gap-2">
                     <Button
                       type="button"
@@ -121,7 +119,7 @@ export function JournalListScreen() {
                         <Button
                           type="button"
                           className="flex-1 rounded-full bg-red-600 text-xs hover:bg-red-700"
-                          onClick={() => handleDelete(entry.id)}
+                          onClick={() => void handleDelete(entry.id)}
                         >
                           Delete
                         </Button>

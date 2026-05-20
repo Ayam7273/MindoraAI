@@ -143,9 +143,9 @@ export function ExerciseActiveScreen() {
   useEffect(() => {
     if (remaining === 0 && started) {
       if (audioRef.current) audioRef.current.pause();
-      navigate("/mindful/complete");
+      navigate("/mindful/complete?mins=" + Math.round(elapsed / 60));
     }
-  }, [remaining, started, navigate]);
+  }, [remaining, started, navigate, elapsed]);
 
   if (!started) {
     return (
@@ -325,7 +325,10 @@ export function ExerciseActiveScreen() {
       <button
         type="button"
         className="mt-10 text-sm font-semibold text-[#1A1208]/70 underline"
-        onClick={() => navigate("/mindful/complete")}
+        onClick={() => {
+          if (audioRef.current) audioRef.current.pause();
+          navigate("/mindful/complete?mins=" + Math.max(1, Math.round(elapsed / 60)));
+        }}
       >
         Finish early
       </button>

@@ -175,6 +175,129 @@ create index if not exists community_notifications_recipient_idx
 
 ---
 
+---
+
+## 5 — Profile Avatar: Storage Bucket + Policies
+
+User profile pictures are uploaded to **Supabase Storage** in a bucket called `avatars`.
+The `profiles.avatar_url` column already exists in your schema.
+
+### Step 1 — Create the storage bucket
+
+In **Supabase → Storage → New bucket**:
+- **Name:** `avatars`
+- **Public:** ✅ Yes (avatars must be publicly readable for the community feed)
+- **File size limit:** 5 MB
+- **Allowed MIME types:** `image/jpeg, image/png, image/webp`
+
+Or via SQL:
+
+```sql
+-- Create the avatars bucket (public)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'avatars',
+  'avatars',
+  true,
+  5242880,   -- 5 MB
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do nothing;
+```
+
+### Step 2 — Storage RLS policies
+
+```sql
+-- Allow any authenticated user to read avatars (bucket is public but add policy for safety)
+create policy "Anyone can view avatars"
+  on storage.objects for select
+  using ( bucket_id = 'avatars' );
+
+-- Users can upload/overwrite only their own avatar (path starts with their user ID)
+create policy "Users can upload own avatar"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'avatars'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Users can update (overwrite) their own avatar
+create policy "Users can update own avatar"
+  on storage.objects for update
+  using (
+    bucket_id = 'avatars'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Users can delete their own avatar
+create policy "Users can delete own avatar"
+  on storage.objects for delete
+  using (
+    bucket_id = 'avatars'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+```
+
+### Step 3 — Ensure profiles.avatar_url column exists
+
+```sql
+alter table public.profiles
+  add column if not exists avatar_url text;
+```
+
+### How it works in the app
+
+1. User taps "Change photo" on the Personal Information page
+2. A file picker opens (JPEG / PNG / WebP, max 5 MB)
+3. The image uploads to `avatars/{userId}/avatar.{ext}` with `upsert: true`
+4. Supabase returns a **public URL** which is saved to `profiles.avatar_url`
+5. The community feed fetches posts with `.select("*, profiles(full_name, avatar_url)")` — so every post card shows the author's real photo automatically
+
+---
+
+## 6 — Chatbot Messages Table
+
+The `chatbot_messages` table should already exist in your schema. If it does not, run the following
+to create it and apply the correct RLS policies and index:
+
+```sql
+create table if not exists public.chatbot_messages (
+  id              uuid        primary key default gen_random_uuid(),
+  conversation_id uuid        not null references public.chatbot_conversations(id) on delete cascade,
+  role            text        not null check (role in ('user', 'assistant')),
+  content         text        not null,
+  created_at      timestamptz not null default now()
+);
+
+alter table public.chatbot_messages enable row level security;
+
+create policy "Users read own conversation messages"
+  on public.chatbot_messages for select
+  using (
+    conversation_id in (
+      select id from public.chatbot_conversations
+      where user_id = auth.uid()
+    )
+  );
+
+create policy "Users insert own conversation messages"
+  on public.chatbot_messages for insert
+  with check (
+    conversation_id in (
+      select id from public.chatbot_conversations
+      where user_id = auth.uid()
+    )
+  );
+
+create index if not exists chatbot_messages_conversation_id_idx
+  on public.chatbot_messages (conversation_id, created_at asc);
+```
+
+> **Note:** The app now reads and writes messages exclusively via this table.
+> The old localStorage stubs in `chatStorage.ts` are no-ops and no longer used for message storage.
+
+---
+
 ## Run Order
 
 Execute in this sequence to avoid foreign-key errors:
@@ -185,15 +308,16 @@ Execute in this sequence to avoid foreign-key errors:
 | 2 | `community_likes` table + policies + RPCs |
 | 3 | `community_comments` table + policies + RPCs |
 | 4 | `community_notifications` table + policies *(optional)* |
+| 5 | Avatars storage bucket + policies |
+| 6 | `chatbot_messages` table + RLS + index *(if not already present)* |
 
 ---
 
 ## Verify
 
-After running, confirm in **Supabase → Table Editor**:
+After running, confirm in **Supabase**:
 
-- `community_likes`: columns `id`, `post_id`, `user_id`, `created_at` — RLS enabled
-- `community_comments`: columns `id`, `post_id`, `user_id`, `content`, `created_at` — RLS enabled
-- **Database → Functions**: four RPCs exist:
-  - `increment_post_likes` / `decrement_post_likes`
-  - `increment_post_comments` / `decrement_post_comments`
+- **Table Editor:** `community_likes`, `community_comments` — RLS enabled
+- **Database → Functions:** `increment_post_likes`, `decrement_post_likes`, `increment_post_comments`, `decrement_post_comments`
+- **Storage:** `avatars` bucket exists, is marked **public**, and the four policies appear under **Storage → Policies**
+- **Table Editor → profiles:** `avatar_url` column exists (type `text`, nullable)

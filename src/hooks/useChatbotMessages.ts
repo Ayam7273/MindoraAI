@@ -20,13 +20,15 @@ export const useChatbotMessages = (conversationId: string | undefined) =>
 export const useAddMessage = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (msg: Omit<ChatbotMessageRow, "id" | "created_at">) => {
-      const { data, error } = await supabase.from("chatbot_messages").insert(msg).select().single();
+    mutationFn: async (row: { conversation_id: string; role: "user" | "assistant"; content: string }) => {
+      const { data, error } = await supabase
+        .from("chatbot_messages")
+        .insert(row)
+        .select()
+        .single();
       if (error) throw error;
       return data as ChatbotMessageRow;
     },
-    onSuccess: (row) => {
-      qc.invalidateQueries({ queryKey: ["chatbot_messages", row.conversation_id] });
-    },
+    onSuccess: (row) => qc.invalidateQueries({ queryKey: ["chatbot_messages", row.conversation_id] }),
   });
 };

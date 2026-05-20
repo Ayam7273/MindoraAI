@@ -2,8 +2,6 @@ import { Check, ChevronRight, Copy, LogOut, Trash2, User } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
-import { ProgressRing } from "@/components/ui/ProgressRing";
-import { useMindoraScore } from "@/hooks/useMindoraScore";
 import { signOut } from "@/services/authService";
 import { useUiStore } from "@/store/uiStore";
 import { useT } from "@/store/languageStore";
@@ -25,9 +23,7 @@ function Row({ to, label, danger }: { to: string; label: string; danger?: boolea
 export function ProfileScreen() {
   const navigate = useNavigate();
   const t = useT();
-  const userId = useUiStore((s) => s.user?.id);
   const displayName = useUiStore((s) => s.profile?.full_name ?? "Friend");
-  const { score } = useMindoraScore(userId);
   const [confirmClear, setConfirmClear] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -37,7 +33,7 @@ export function ProfileScreen() {
 
   function handleCopyInvite() {
     // Placeholder URL — embed your real invite link here
-    const inviteUrl = window.location.origin + "/#/signup";
+    const inviteUrl = "https://mindora-ai-three.vercel.app/";
     navigator.clipboard.writeText(inviteUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -59,7 +55,6 @@ export function ProfileScreen() {
             </p>
             <p className="text-xs text-[var(--color-text-muted)]">{t("profile.member")}</p>
           </div>
-          <ProgressRing value={score / 100} size={52} stroke={5} progressColor="var(--color-accent-green)" />
         </div>
 
         {/* General */}

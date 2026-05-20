@@ -17,6 +17,19 @@ export const useChatbotConversations = (userId: string | undefined) =>
     enabled: Boolean(userId),
   });
 
+export const useDeleteConversation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
+      const { error } = await supabase.from("chatbot_conversations").delete().eq("id", id);
+      if (error) throw error;
+      return { id, userId };
+    },
+    onSuccess: ({ userId }) =>
+      qc.invalidateQueries({ queryKey: ["chatbot_conversations", userId] }),
+  });
+};
+
 export const useUpsertConversation = () => {
   const qc = useQueryClient();
   return useMutation({

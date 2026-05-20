@@ -1,15 +1,17 @@
 import { formatDistanceToNow, format } from "date-fns";
 import {
+  AlertTriangle,
   Bell,
   Heart,
   MessageCircle,
   Pencil,
   Send,
+  Trash2,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useCommunityPosts, useAddPost } from "@/hooks/useCommunityPosts";
+import { useCommunityPosts, useAddPost, useDeletePost } from "@/hooks/useCommunityPosts";
 import { useMyLikes, useToggleLike } from "@/hooks/useCommunityLikes";
 import { usePostComments, useAddComment } from "@/hooks/useCommunityComments";
 import { useCommunityStore } from "@/store/communityStore";
@@ -47,15 +49,46 @@ function timeAgo(iso: string): string {
   catch { return ""; }
 }
 
+/** Renders an avatar: real photo if available, otherwise coloured initials circle */
+function Avatar({
+  avatarUrl,
+  name,
+  seed,
+  size = "md",
+}: {
+  avatarUrl?: string | null;
+  name?: string | null;
+  seed: string;
+  size?: "sm" | "md";
+}) {
+  const dims = size === "sm" ? "h-7 w-7 text-[10px]" : "h-10 w-10 text-sm";
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name ?? "User"}
+        className={cn("shrink-0 rounded-full object-cover ring-1 ring-[var(--color-border)]", dims)}
+      />
+    );
+  }
+  return (
+    <div className={cn("flex shrink-0 items-center justify-center rounded-full font-bold text-white", dims, avatarColor(seed))}>
+      {initials(name ?? seed.slice(0, 2))}
+    </div>
+  );
+}
+
 // ── Compose form (shared by both mobile overlay and desktop modal) ────────────
 function ComposeForm({
   userId,
   displayName,
+  avatarUrl,
   onClose,
   onPosted,
 }: {
   userId: string;
   displayName: string;
+  avatarUrl?: string | null;
   onClose: () => void;
   onPosted: () => void;
 }) {
@@ -98,9 +131,7 @@ function ComposeForm({
 
       {/* Author */}
       <div className="mb-3 flex items-center gap-2">
-        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white", avatarColor(userId))}>
-          {initials(displayName)}
-        </div>
+        <Avatar avatarUrl={avatarUrl} name={displayName} seed={userId} />
         <span className="text-sm font-semibold text-[var(--color-primary)]">{displayName}</span>
       </div>
 
@@ -151,23 +182,20 @@ function ComposeForm({
 
 // ── Unified centred popup — same on mobile AND desktop ───────────────────────
 function ComposeModal({
-  open, onClose, userId, displayName, onPosted,
-}: { open: boolean; onClose: () => void; userId: string; displayName: string; onPosted: () => void }) {
+  open, onClose, userId, displayName, avatarUrl, onPosted,
+}: { open: boolean; onClose: () => void; userId: string; displayName: string; avatarUrl?: string | null; onPosted: () => void }) {
   if (!open) return null;
   return (
     <div
       className="community-compose-modal fixed inset-0 z-50 flex items-center justify-center px-4"
       style={{ background: "rgba(0,0,0,0.5)" }}
     >
-      {/* Backdrop tap to close */}
       <div className="absolute inset-0" onClick={onClose} role="presentation" />
-
-      {/* Modal card — centred on every screen size */}
       <div
         className="community-compose-modal-box relative w-full max-w-lg rounded-3xl bg-[#FAF8F4] px-5 py-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <ComposeForm userId={userId} displayName={displayName} onClose={onClose} onPosted={onPosted} />
+        <ComposeForm userId={userId} displayName={displayName} avatarUrl={avatarUrl} onClose={onClose} onPosted={onPosted} />
       </div>
     </div>
   );
@@ -175,8 +203,8 @@ function ComposeModal({
 
 // ── Comments section ──────────────────────────────────────────────────────────
 function CommentsSection({
-  post, userId, displayName,
-}: { post: CommunityPostRow; userId: string; displayName: string }) {
+  post, userId, displayName, myAvatarUrl,
+}: { post: CommunityPostRow; userId: string; displayName: string; myAvatarUrl?: string | null }) {
   const { data: comments = [] } = usePostComments(post.id);
   const addComment = useAddComment();
   const [text, setText] = useState("");
@@ -207,9 +235,12 @@ function CommentsSection({
         <ul className="mb-3 space-y-3">
           {comments.map((c) => (
             <li key={c.id} className="community-comment-item flex gap-2">
-              <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white", avatarColor(c.user_id))}>
-                {initials(c.user_id.slice(0, 2))}
-              </div>
+              <Avatar
+                avatarUrl={c.user_id === userId ? myAvatarUrl : null}
+                name={c.user_id === userId ? displayName : "Community member"}
+                seed={c.user_id}
+                size="sm"
+              />
               <div className="min-w-0 flex-1 rounded-2xl rounded-tl-none bg-[var(--color-bg-secondary)] px-3 py-2">
                 <p className="text-xs font-semibold text-[var(--color-primary)]">
                   {c.user_id === userId ? displayName : "Community member"}
@@ -225,9 +256,7 @@ function CommentsSection({
       )}
       {/* Comment input */}
       <div className="community-comment-input flex items-end gap-2">
-        <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white", avatarColor(userId))}>
-          {initials(displayName)}
-        </div>
+        <Avatar avatarUrl={myAvatarUrl} name={displayName} seed={userId} size="sm" />
         <div className="flex min-w-0 flex-1 items-end gap-2 rounded-2xl rounded-bl-none border border-[var(--color-border)] bg-white px-3 py-2">
           <textarea
             value={text}
@@ -253,77 +282,160 @@ function CommentsSection({
   );
 }
 
+// ── Delete confirmation overlay ───────────────────────────────────────────────
+function DeleteConfirm({
+  onConfirm,
+  onCancel,
+  deleting,
+}: {
+  onConfirm: () => void;
+  onCancel: () => void;
+  deleting: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-5" style={{ background: "rgba(0,0,0,0.55)" }}>
+      <div className="absolute inset-0" onClick={onCancel} role="presentation" />
+
+      <div className="relative w-full max-w-sm rounded-3xl bg-white px-6 pb-6 pt-6 shadow-2xl text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+          <AlertTriangle className="h-8 w-8 text-red-500" strokeWidth={1.75} />
+        </div>
+
+        <h2 className="text-lg font-bold text-[var(--color-primary)]">Delete this post?</h2>
+        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+          This action is permanent and cannot be undone.
+        </p>
+
+        <div className="mt-5 flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex flex-1 items-center justify-center rounded-full border border-[var(--color-border)] py-3 text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)]"
+          >
+            No
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={deleting}
+            className="flex flex-1 items-center justify-center rounded-full bg-red-500 py-3 text-sm font-bold text-white transition-colors hover:bg-red-600 disabled:opacity-60"
+          >
+            {deleting ? "Deleting…" : "Yes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Post card ─────────────────────────────────────────────────────────────────
 function PostCard({
-  post, userId, displayName, likedSet, onLike,
+  post, userId, displayName, myAvatarUrl, likedSet, onLike,
 }: {
   post: CommunityPostRow;
   userId: string;
   displayName: string;
+  myAvatarUrl?: string | null;
   likedSet: Set<string>;
   onLike: (post: CommunityPostRow) => void;
 }) {
   const [showComments, setShowComments] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const deletePost = useDeletePost();
   const liked = likedSet.has(post.id);
   const catColor = CATEGORY_COLORS[post.category ?? ""] ?? CATEGORY_COLORS.Default;
   const isOwn = post.user_id === userId;
 
+  // The post's author avatar: own post → use myAvatarUrl; other user → from joined profiles
+  const authorAvatarUrl = isOwn ? myAvatarUrl : (post.profiles?.avatar_url ?? null);
+  const authorName = isOwn ? displayName : (post.profiles?.full_name ?? "Community member");
+
+  const handleDelete = async () => {
+    await deletePost.mutateAsync({ id: post.id });
+    setConfirmDelete(false);
+  };
+
   return (
-    <article className="community-post-card overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-sm)]">
-      {/* Header */}
-      <div className="community-post-header flex items-start gap-3 px-4 pb-2 pt-4">
-        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white", avatarColor(post.user_id))}>
-          {isOwn ? initials(displayName) : initials(post.user_id.slice(0, 4))}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-[var(--color-primary)]">
-            {isOwn ? displayName : "Community member"}
-          </p>
-          <p className="text-[10px] text-[var(--color-text-muted)]">
-            {timeAgo(post.created_at)} &middot; {format(new Date(post.created_at), "MMM d, yyyy h:mm a")}
-          </p>
-        </div>
-        {post.category && (
-          <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold", catColor)}>
-            {post.category}
-          </span>
-        )}
-      </div>
-
-      {/* Content */}
-      <p className="community-post-content px-4 pb-3 text-sm leading-relaxed text-[var(--color-text-primary)]">
-        {post.content}
-      </p>
-
-      {/* Actions */}
-      <div className="community-post-actions flex items-center gap-6 border-t border-[var(--color-border)] px-4 py-2">
-        <button
-          type="button"
-          onClick={() => onLike(post)}
-          className={cn(
-            "flex items-center gap-1.5 text-sm font-medium transition-colors",
-            liked ? "text-red-500" : "text-[var(--color-text-muted)] hover:text-red-400",
+    <>
+      <article className="community-post-card overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-sm)]">
+        {/* Header */}
+        <div className="community-post-header flex items-start gap-3 px-4 pb-2 pt-4">
+          <Avatar avatarUrl={authorAvatarUrl} name={authorName} seed={post.user_id} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-[var(--color-primary)]">
+              {authorName}
+            </p>
+            <p className="text-[10px] text-[var(--color-text-muted)]">
+              {timeAgo(post.created_at)} &middot; {format(new Date(post.created_at), "MMM d, yyyy h:mm a")}
+            </p>
+          </div>
+          {post.category && (
+            <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold", catColor)}>
+              {post.category}
+            </span>
           )}
-          aria-label={liked ? "Unlike" : "Like"}
-        >
-          <Heart className={cn("h-5 w-5 transition-all", liked && "fill-red-500")} strokeWidth={liked ? 0 : 1.75} />
-          <span>{(post.likes_count ?? 0) + (liked ? 1 : 0)}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowComments((v) => !v)}
-          className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)]"
-          aria-label="Comments"
-        >
-          <MessageCircle className="h-5 w-5" strokeWidth={1.75} />
-          <span>{post.comments_count ?? 0}</span>
-        </button>
-      </div>
+        </div>
 
-      {showComments && (
-        <CommentsSection post={post} userId={userId} displayName={displayName} />
+        {/* Content */}
+        <p className="community-post-content px-4 pb-3 text-sm leading-relaxed text-[var(--color-text-primary)]">
+          {post.content}
+        </p>
+
+        {/* Actions — left: like + comment | right: delete (own posts only) */}
+        <div className="community-post-actions flex items-center border-t border-[var(--color-border)] px-4 py-2">
+          {/* Left group */}
+          <div className="flex flex-1 items-center gap-5">
+            <button
+              type="button"
+              onClick={() => onLike(post)}
+              className={cn(
+                "flex items-center gap-1.5 text-sm font-medium transition-colors",
+                liked ? "text-red-500" : "text-[var(--color-text-muted)] hover:text-red-400",
+              )}
+              aria-label={liked ? "Unlike" : "Like"}
+            >
+              <Heart className={cn("h-5 w-5 transition-all", liked && "fill-red-500")} strokeWidth={liked ? 0 : 1.75} />
+              <span>{(post.likes_count ?? 0) + (liked ? 1 : 0)}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowComments((v) => !v)}
+              className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)]"
+              aria-label="Comments"
+            >
+              <MessageCircle className="h-5 w-5" strokeWidth={1.75} />
+              <span>{post.comments_count ?? 0}</span>
+            </button>
+          </div>
+
+          {/* Right group — delete (own posts only) */}
+          {isOwn && (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="ml-auto flex items-center justify-center rounded-full p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-red-50 hover:text-red-400"
+              aria-label="Delete post"
+            >
+              <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+            </button>
+          )}
+        </div>
+
+        {showComments && (
+          <CommentsSection post={post} userId={userId} displayName={displayName} myAvatarUrl={myAvatarUrl} />
+        )}
+      </article>
+
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <DeleteConfirm
+          onConfirm={() => void handleDelete()}
+          onCancel={() => setConfirmDelete(false)}
+          deleting={deletePost.isPending}
+        />
       )}
-    </article>
+    </>
   );
 }
 
@@ -331,6 +443,7 @@ function PostCard({
 export function CommunityScreen() {
   const userId = useUiStore((s) => s.user?.id) ?? "";
   const displayName = useUiStore((s) => s.profile?.full_name ?? "Community member");
+  const myAvatarUrl = useUiStore((s) => s.profile?.avatar_url ?? null);
   const { data: posts = [], isLoading } = useCommunityPosts();
   const { data: myLikes = [] } = useMyLikes(userId);
   const toggleLike = useToggleLike();
@@ -371,9 +484,7 @@ export function CommunityScreen() {
         <div className="community-header-inner flex items-center justify-between gap-3 px-4">
           {/* Identity */}
           <div className="flex items-center gap-2">
-            <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white", avatarColor(userId))}>
-              {initials(displayName)}
-            </div>
+            <Avatar avatarUrl={myAvatarUrl} name={displayName} seed={userId} />
             <div>
               <p className="text-sm font-bold leading-tight">Community</p>
               <p className="text-[10px] text-white/60">Mindora AI</p>
@@ -440,6 +551,7 @@ export function CommunityScreen() {
             post={post}
             userId={userId}
             displayName={displayName}
+            myAvatarUrl={myAvatarUrl}
             likedSet={likedSet}
             onLike={handleLike}
           />
@@ -462,6 +574,7 @@ export function CommunityScreen() {
         onClose={() => setComposeOpen(false)}
         userId={userId}
         displayName={displayName}
+        avatarUrl={myAvatarUrl}
         onPosted={() => {}}
       />
     </div>

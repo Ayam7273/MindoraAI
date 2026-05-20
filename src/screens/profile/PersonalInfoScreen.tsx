@@ -1,126 +1,172 @@
-﻿import { ChevronLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Camera, ChevronLeft, Loader2, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
-import { Toggle } from "@/components/ui/Toggle";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
+import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { useUiStore } from "@/store/uiStore";
 
 export function PersonalInfoScreen() {
   const navigate = useNavigate();
   const userId = useUiStore((s) => s.user?.id);
+  const setProfile = useUiStore((s) => s.setProfile);
   const { data: profile } = useProfile(userId);
   const updateProfile = useUpdateProfile();
-  const [name, setNameLocal] = useState("");
-  const [emergency, setEmergency] = useState("");
-  const [dob, setDob] = useState("2000-01-01");
+  const { upload, uploading } = useAvatarUpload();
+
+  const [name, setName] = useState("");
+  const [dob, setDob] = useState("");
   const [gender, setGender] = useState("Prefer not to say");
-  const [loc, setLoc] = useState("");
-  const [weight, setWeight] = useState(55);
-  const [accountPro, setAccountPro] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!profile) return;
-    setNameLocal(profile.full_name ?? "");
-    setEmergency(profile.emergency_contact ?? "");
-    setDob(profile.date_of_birth ?? "2000-01-01");
+    setName(profile.full_name ?? "");
+    setDob(profile.date_of_birth ?? "");
     setGender(profile.gender ?? "Prefer not to say");
-    setLoc(profile.location ?? "");
-    setWeight(profile.weight != null ? Number(profile.weight) : 55);
-    setAccountPro(profile.account_type === "professional");
+    setAvatarUrl(profile.avatar_url ?? null);
   }, [profile]);
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    // Show preview immediately
+    const preview = URL.createObjectURL(file);
+    setAvatarUrl(preview);
+    const publicUrl = await upload(userId, file);
+    if (publicUrl) {
+      setAvatarUrl(publicUrl);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!userId) return;
+    setSaving(true);
+    const updated = await updateProfile.mutateAsync({
+      id: userId,
+      patch: {
+        full_name: name.trim() || profile?.full_name,
+        date_of_birth: dob || null,
+        gender: gender || null,
+        avatar_url: avatarUrl,
+      },
+    });
+    // Keep Zustand store in sync so the avatar shows everywhere immediately
+    setProfile(updated);
+    setSaving(false);
+    navigate(-1);
+  };
+
   return (
-    <div className="min-h-dvh bg-[#FAF8F4] px-4 pb-28 pt-[max(0.75rem,env(safe-area-inset-top))]">
-      <header className="mb-4 flex items-center gap-2">
-        <button type="button" onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white ring-1 ring-[var(--color-border)]">
+    <div className="min-h-dvh bg-[#FAF8F4] px-4 pb-28 pt-[max(0.75rem,env(safe-area-inset-top))] lg:mx-auto lg:max-w-lg lg:pt-8">
+      {/* Header */}
+      <header className="mb-6 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-[var(--color-border)]"
+          aria-label="Back"
+        >
           <ChevronLeft className="h-6 w-6 text-[#3B2A1A]" />
         </button>
         <h1 className="flex-1 text-center text-lg font-bold text-[#3B2A1A]">Personal Information</h1>
-        <span className="w-10" />
+        <span className="w-10 shrink-0" />
       </header>
 
-      <div className="mb-4 flex justify-center">
-        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--color-bg-secondary)] text-4xl">📷</div>
-      </div>
+      {/* Avatar upload */}
+      <div className="mb-6 flex flex-col items-center gap-2">
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="group relative h-24 w-24 overflow-hidden rounded-full bg-[var(--color-bg-secondary)] ring-4 ring-[var(--color-border)] transition-all hover:ring-[var(--color-accent-green)]"
+          aria-label="Change profile picture"
+        >
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="Profile"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <User className="h-10 w-10 text-[var(--color-text-muted)]" strokeWidth={1.5} />
+            </div>
+          )}
+          {/* Camera overlay */}
+          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-colors group-hover:bg-black/25">
+            {uploading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-white opacity-0 transition-opacity group-hover:opacity-100" />
+            ) : (
+              <Camera className="h-6 w-6 text-white opacity-0 transition-opacity group-hover:opacity-100" strokeWidth={1.75} />
+            )}
+          </div>
+        </button>
 
-      <label className="mb-3 block text-sm font-medium text-[var(--color-text-secondary)]">
-        Full Name
-        <input value={name} onChange={(e) => setNameLocal(e.target.value)} className="mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5" />
-      </label>
-      <label className="mb-3 block text-sm font-medium text-[var(--color-text-secondary)]">
-        Date of Birth
-        <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5" />
-      </label>
-      <label className="mb-3 block text-sm font-medium text-[var(--color-text-secondary)]">
-        Gender
-        <select value={gender} onChange={(e) => setGender(e.target.value)} className="mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5">
-          <option>Female</option>
-          <option>Male</option>
-          <option>Non-binary</option>
-          <option>Prefer not to say</option>
-        </select>
-      </label>
-      <label className="mb-3 block text-sm font-medium text-[var(--color-text-secondary)]">
-        Location
-        <input value={loc} onChange={(e) => setLoc(e.target.value)} className="mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5" />
-      </label>
-      <label className="mb-3 block text-sm font-medium text-[var(--color-text-secondary)]">
-        Emergency contact (phone)
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="text-xs font-semibold text-[var(--color-accent-green)] underline-offset-2 hover:underline"
+          disabled={uploading}
+        >
+          {uploading ? "Uploading…" : "Change photo"}
+        </button>
+
         <input
-          value={emergency}
-          onChange={(e) => setEmergency(e.target.value)}
-          placeholder="+1 555 123 4567"
-          inputMode="tel"
-          className="mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5"
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleAvatarChange}
         />
-      </label>
-
-      <p className="mb-1 text-sm font-medium text-[var(--color-text-secondary)]">Weight ({weight}kg)</p>
-      <input type="range" min={40} max={100} value={weight} onChange={(e) => setWeight(Number(e.target.value))} className="mb-4 w-full accent-[#3B2A1A]" />
-
-      <p className="mb-2 text-sm font-medium text-[var(--color-text-secondary)]">Account Type</p>
-      <div className="mb-6 flex gap-2">
-        <button
-          type="button"
-          onClick={() => setAccountPro(false)}
-          className={`flex-1 rounded-full py-2 text-xs font-bold ${!accountPro ? "bg-[#3B2A1A] text-white" : "bg-white ring-1 ring-[var(--color-border)]"}`}
-        >
-          Patient
-        </button>
-        <button
-          type="button"
-          onClick={() => setAccountPro(true)}
-          className={`flex-1 rounded-full py-2 text-xs font-bold ${accountPro ? "bg-[#3B2A1A] text-white" : "bg-white ring-1 ring-[var(--color-border)]"}`}
-        >
-          Professional
-        </button>
       </div>
 
-      <Toggle label="Show avatar on posts " checked onChange={() => {}} />
+      {/* Fields */}
+      <div className="space-y-4">
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
+          Full Name
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your full name"
+            className="mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-border-strong)]"
+          />
+        </label>
+
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
+          Date of Birth
+          <input
+            type="date"
+            value={dob}
+            onChange={(e) => setDob(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-border-strong)]"
+          />
+        </label>
+
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
+          Gender
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-border-strong)]"
+          >
+            <option>Female</option>
+            <option>Male</option>
+            <option>Non-binary</option>
+            <option>Prefer not to say</option>
+          </select>
+        </label>
+      </div>
 
       <Button
         type="button"
         fullWidth
         className="mt-8 rounded-full"
-        onClick={() => {
-          if (!userId) return;
-          void updateProfile.mutateAsync({
-            id: userId,
-            patch: {
-              full_name: name.trim() || profile?.full_name,
-              emergency_contact: emergency.trim() || null,
-              date_of_birth: dob || null,
-              gender: gender || null,
-              location: loc.trim() || null,
-              weight,
-              account_type: accountPro ? "professional" : "patient",
-            },
-          });
-          navigate(-1);
-        }}
+        disabled={saving || uploading}
+        onClick={() => void handleSave()}
       >
-        Save Settings
+        {saving ? "Saving…" : "Save"}
       </Button>
     </div>
   );

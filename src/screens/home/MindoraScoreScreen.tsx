@@ -1,13 +1,13 @@
 import { useMemo } from "react";
 import { format, subDays } from "date-fns";
-import { BookOpen, ChevronLeft, Flame, Smile } from "lucide-react";
+import { BookOpen, Brain, ChevronLeft, Flame, MessageSquare, Moon, Smile } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { MindoraScoreBadge } from "@/components/ui/MindoraScoreBadge";
 import { MoodEmoji } from "@/components/ui/MoodEmoji";
 import { useMindoraScore } from "@/hooks/useMindoraScore";
-import { getMoodEntries, getMoodTrend } from "@/lib/moodStorage";
-import { getJournalStreak } from "@/lib/journalStorage";
+import { useMoodEntries } from "@/hooks/useMoodEntries";
+import { useJournalEntries } from "@/hooks/useJournalEntries";
 import { useUiStore } from "@/store/uiStore";
 import type { MoodKey } from "@/types";
 import { cn } from "@/lib/utils";
@@ -28,14 +28,51 @@ const MOOD_COLOR: Record<MoodKey, string> = {
   overjoyed: "bg-[var(--mood-overjoyed)]",
 };
 
+const BREAKDOWN_ROWS: {
+  key: keyof ReturnType<typeof useMindoraScore>["breakdown"];
+  label: string;
+  weight: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    key: "moodScore",
+    label: "Mood",
+    weight: "25%",
+    icon: <Smile className="h-4 w-4 text-[var(--color-text-secondary)]" strokeWidth={1.75} />,
+  },
+  {
+    key: "journalScore",
+    label: "Journal",
+    weight: "20%",
+    icon: <BookOpen className="h-4 w-4 text-[var(--color-text-secondary)]" strokeWidth={1.75} />,
+  },
+  {
+    key: "stressScore",
+    label: "Stress",
+    weight: "20%",
+    icon: <Brain className="h-4 w-4 text-[var(--color-text-secondary)]" strokeWidth={1.75} />,
+  },
+  {
+    key: "sleepScore",
+    label: "Sleep",
+    weight: "20%",
+    icon: <Moon className="h-4 w-4 text-[var(--color-text-secondary)]" strokeWidth={1.75} />,
+  },
+  {
+    key: "chatScore",
+    label: "AI Chat",
+    weight: "15%",
+    icon: <MessageSquare className="h-4 w-4 text-[var(--color-text-secondary)]" strokeWidth={1.75} />,
+  },
+];
+
 export function MindoraScoreScreen() {
   const navigate = useNavigate();
   const userId = useUiStore((s) => s.user?.id);
-  const { score } = useMindoraScore(userId);
+  const { score, breakdown } = useMindoraScore(userId);
 
-  const moodEntries = useMemo(() => getMoodEntries(), []);
-  const journalStreak = useMemo(() => getJournalStreak(), []);
-  const trend = useMemo(() => getMoodTrend(), []);
+  const { data: moodEntries = [] } = useMoodEntries(userId);
+  const { data: journalEntries = [] } = useJournalEntries(userId);
 
   const status = useMemo(() => {
     if (score >= 70) return "Mentally Stable";
@@ -49,10 +86,10 @@ export function MindoraScoreScreen() {
   // Average mood score over last 7 days
   const avgMood =
     recentMoods.length > 0
-      ? (recentMoods.reduce((s, e) => s + MOOD_SCORE[e.mood], 0) / recentMoods.length).toFixed(1)
+      ? (recentMoods.reduce((s, e) => s + MOOD_SCORE[e.mood as MoodKey], 0) / recentMoods.length).toFixed(1)
       : null;
 
-  // Check-in streak (consecutive days with mood entry)
+  // Check-in streak (consecutive days with mood entry — using created_at from Supabase)
   const moodStreak = useMemo(() => {
     if (!moodEntries.length) return 0;
     const today = new Date();
@@ -61,22 +98,52 @@ export function MindoraScoreScreen() {
     for (let i = 0; i < 365; i++) {
       const d = subDays(today, i);
       const dateStr = d.toISOString().slice(0, 10);
-      const hasEntry = moodEntries.some((e) => e.timestamp.startsWith(dateStr));
+      const hasEntry = moodEntries.some((e) => e.created_at.startsWith(dateStr));
       if (!hasEntry) break;
       streak++;
     }
     return streak;
   }, [moodEntries]);
 
-  // 28-day mood heatmap
+  // Journal streak (consecutive days with a journal entry — using created_at from Supabase)
+  const journalStreak = useMemo(() => {
+    if (!journalEntries.length) return 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = subDays(today, i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const hasEntry = journalEntries.some((e) => e.created_at.startsWith(dateStr));
+      if (!hasEntry) break;
+      streak++;
+    }
+    return streak;
+  }, [journalEntries]);
+
+  // Mood trend derived from real Supabase entries
+  const trend = useMemo((): "up" | "down" | "stable" | null => {
+    if (moodEntries.length < 2) return null;
+    const SCORE: Record<MoodKey, number> = { depressed: 1, sad: 2, neutral: 3, happy: 4, overjoyed: 5 };
+    const recent = moodEntries.slice(0, 3).map((e) => SCORE[e.mood as MoodKey] ?? 3);
+    const older = moodEntries.slice(3, 6).map((e) => SCORE[e.mood as MoodKey] ?? 3);
+    if (!older.length) return null;
+    const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+    const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
+    if (recentAvg > olderAvg + 0.3) return "up";
+    if (recentAvg < olderAvg - 0.3) return "down";
+    return "stable";
+  }, [moodEntries]);
+
+  // 28-day mood heatmap (using created_at from Supabase)
   const heatmap = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return Array.from({ length: 28 }, (_, i) => {
       const d = subDays(today, 27 - i);
       const dateStr = d.toISOString().slice(0, 10);
-      const entry = moodEntries.find((e) => e.timestamp.startsWith(dateStr));
-      return { date: d, mood: entry?.mood ?? null };
+      const entry = moodEntries.find((e) => e.created_at.startsWith(dateStr));
+      return { date: d, mood: (entry?.mood ?? null) as MoodKey | null };
     });
   }, [moodEntries]);
 
@@ -136,6 +203,36 @@ export function MindoraScoreScreen() {
           />
         </div>
 
+        {/* Score Breakdown */}
+        <section>
+          <h2 className="mb-2 text-sm font-bold text-[var(--color-primary)]">Score Breakdown</h2>
+          <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-sm)] space-y-3">
+            {BREAKDOWN_ROWS.map(({ key, label, weight, icon }) => {
+              const factorScore = breakdown[key];
+              return (
+                <div key={key} className="flex items-center gap-3">
+                  <div className="flex-shrink-0">{icon}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-[var(--color-text-primary)]">{label}</span>
+                      <span className="text-[10px] text-[var(--color-text-muted)]">{weight}</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-border)]">
+                      <div
+                        className="h-full rounded-full bg-[var(--color-primary)] transition-all duration-500"
+                        style={{ width: `${factorScore}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span className="flex-shrink-0 w-8 text-right text-xs font-semibold tabular-nums text-[var(--color-primary)]">
+                    {factorScore}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         {/* Trend */}
         {trendLabel && (
           <div className="rounded-[var(--radius-lg)] bg-[var(--color-accent-green-light)] px-4 py-3">
@@ -193,16 +290,16 @@ export function MindoraScoreScreen() {
                   key={entry.id}
                   className="flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5"
                 >
-                  <MoodEmoji mood={entry.mood} size={32} />
+                  <MoodEmoji mood={entry.mood as MoodKey} size={32} />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      {format(new Date(entry.timestamp), "EEE, MMM d · h:mm a")}
+                      {format(new Date(entry.created_at), "EEE, MMM d · h:mm a")}
                     </p>
                     <p className="text-sm capitalize text-[var(--color-text-primary)]">
                       {entry.mood}
                     </p>
                   </div>
-                  <MindoraScoreBadge score={MOOD_SCORE[entry.mood] * 20} size={36} stroke={3} />
+                  <MindoraScoreBadge score={MOOD_SCORE[entry.mood as MoodKey] * 20} size={36} stroke={3} />
                 </li>
               ))}
             </ul>

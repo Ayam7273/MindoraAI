@@ -136,6 +136,11 @@ export interface CommunityPostRow {
   likes_count: number | null;
   comments_count: number | null;
   created_at: string;
+  /** Joined from profiles — present when queried with select("*, profiles(...)") */
+  profiles?: {
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
 }
 
 export interface CommunityLikeRow {
