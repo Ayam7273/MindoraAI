@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { CheckCircle, Loader2, PenLine, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
@@ -7,7 +7,7 @@ import { TopBar } from "@/components/ui/TopBar";
 import { useAddJournal } from "@/hooks/useJournalEntries";
 import { useUiStore } from "@/store/uiStore";
 import { hapticSuccess } from "@/lib/haptics";
-import { genAI } from "@/lib/gemini";
+import { generateText } from "@/lib/aiHelpers";
 
 export function NewJournalScreen() {
   const navigate = useNavigate();
@@ -37,12 +37,10 @@ export function NewJournalScreen() {
       setEntryId(entry.id);
       setSaved(true);
 
-      // Ask Gemini for an empathetic reflection on the journal entry
-      if (genAI && body.trim().length > 20) {
+      // Ask AI for an empathetic reflection on the journal entry
+      if (body.trim().length > 20) {
         setReflectionLoading(true);
-        try {
-          const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-          const prompt = `The following is a personal journal entry. Provide a brief, empathetic reflection that:
+        const prompt = `The following is a personal journal entry. Provide a brief, empathetic reflection that:
 - Validates the user's feelings in 1-2 sentences
 - Offers one gentle, practical insight
 - Ends with an encouraging closing sentence
@@ -50,13 +48,9 @@ Do not give medical advice. Keep the total response to 3-4 sentences. Be warm an
 
 Journal entry:
 "${body.trim().slice(0, 800)}"`;
-          const result = await model.generateContent(prompt);
-          setReflection(result.response.text());
-        } catch {
-          // Gemini unavailable — skip silently
-        } finally {
-          setReflectionLoading(false);
-        }
+        const reply = await generateText(prompt).catch(() => null);
+        setReflection(reply);
+        setReflectionLoading(false);
       }
     } catch {
       // insert failed — stay on the form

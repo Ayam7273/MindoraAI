@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Moon, Star } from "lucide-react";
 import { useSleepEntries, useAddSleepEntry } from "@/hooks/useSleepEntries";
 import { useUiStore } from "@/store/uiStore";
-import { genAI } from "@/lib/gemini";
+import { generateText } from "@/lib/aiHelpers";
 import type { SleepEntryRow } from "@/types/database";
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -107,23 +107,15 @@ export function SleepQualityScreen() {
       }
     }
 
-    // Ask Gemini to rate the sleep
-    if (genAI) {
-      setRatingLoading(true);
-      try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const hours = duration_hours.toFixed(1);
-        const prompt = `The user slept for ${hours} hours. Rate their sleep quality in 2-3 sentences. Include: quality label (Excellent/Good/Fair/Poor), whether the duration is healthy, and one gentle recommendation. Be warm and concise.`;
-        const result = await model.generateContent(prompt);
-        setAiRating(result.response.text());
-      } catch {
-        setAiRating("We couldn't rate your sleep right now, but well done for tracking it!");
-      } finally {
-        setRatingLoading(false);
-      }
-    } else {
-      const label = qualityFromHours(duration_hours);
-      setAiRating(`${label} sleep of ${duration_hours.toFixed(1)} hours recorded. Keep it up!`);
+    // Ask AI to rate the sleep
+    setRatingLoading(true);
+    try {
+      const hours = duration_hours.toFixed(1);
+      const prompt = `The user slept for ${hours} hours. Rate their sleep quality in 2-3 sentences. Include: quality label (Excellent/Good/Fair/Poor), whether the duration is healthy, and one gentle recommendation. Be warm and concise.`;
+      const reply = await generateText(prompt).catch(() => null);
+      setAiRating(reply ?? "We couldn't rate your sleep right now, but well done for tracking it!");
+    } finally {
+      setRatingLoading(false);
     }
   }
 

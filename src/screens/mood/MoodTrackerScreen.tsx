@@ -1,8 +1,8 @@
-import { format, subDays, startOfDay, endOfDay } from "date-fns";
+﻿import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { Brain, Calendar, ChevronRight, Clock, Lightbulb, List, Loader2, Plus, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { genAI } from "@/lib/gemini";
+import { generateText } from "@/lib/aiHelpers";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { MoodEmoji } from "@/components/ui/MoodEmoji";
@@ -114,18 +114,15 @@ export function MoodTrackerScreen() {
 
   useEffect(() => {
     if (tab !== "suggestions" || aiSuggestion || aiLoading) return;
-    if (!genAI) return; // No API key — static steps will show instead
 
     setAiLoading(true);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `The user is feeling "${MOOD_LABEL[currentMoodKey]}" right now.
 Write 3 concise, warm, evidence-based suggestions to help them feel better.
 Format your response as a numbered list (1. 2. 3.) with a bold title on each line followed by one short paragraph.
 Be compassionate, practical, and avoid medical advice.`;
 
-    model
-      .generateContent(prompt)
-      .then((result) => setAiSuggestion(result.response.text()))
+    generateText(prompt)
+      .then((result) => setAiSuggestion(result))
       .catch(() => setAiSuggestion(null))
       .finally(() => setAiLoading(false));
   }, [tab, aiSuggestion, aiLoading, currentMoodKey]);

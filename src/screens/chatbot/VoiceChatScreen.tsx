@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { Bot, ChevronLeft, Mic, MicOff, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { genAI } from "@/lib/gemini";
+import { groqChat, isGroqConfigured, GROQ_CHAT_MODEL } from "@/lib/groq";
 import { cn } from "@/lib/utils";
 import { useUpsertConversation } from "@/hooks/useChatbotConversations";
 import { useAddMessage } from "@/hooks/useChatbotMessages";
@@ -140,51 +140,43 @@ export function VoiceChatScreen() {
       addMsg.mutate({ conversation_id: convoId, role: "user", content: userText });
     }
 
-    if (!genAI) {
-      const fallback = "I'm here for you, but my AI connection isn't configured right now. Please set your Gemini API key to enable full responses.";
-      setTurns([...updatedTurns, { role: "ai", text: fallback }]);
-      speak(fallback);
+    if (!isGroqConfigured()) {
+      const msg = "AI is not configured. Please add VITE_GROQ_API_KEY to your .env file.";
+      setTurns([...updatedTurns, { role: "ai", text: msg }]);
+      speak(msg);
       return;
     }
 
     try {
-      const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
-        systemInstruction: SYSTEM_PROMPT,
-      });
+      setStatus("thinking");
 
-      // Build Gemini history from previous turns (exclude current user message)
-      const history = turns.map((t) => ({
-        role: t.role === "user" ? "user" as const : "model" as const,
-        parts: [{ text: t.text }],
-      }));
+      // Build full conversation history for Groq
+      const messages = [
+        { role: "system" as const, content: SYSTEM_PROMPT },
+        ...turns.map((t) => ({
+          role: (t.role === "user" ? "user" : "assistant") as "user" | "assistant",
+          content: t.text,
+        })),
+        { role: "user" as const, content: userText },
+      ];
 
-      const chat = model.startChat({ history, generationConfig: { maxOutputTokens: 256, temperature: 0.8 } });
-      const result = await chat.sendMessageStream(userText);
-
-      let full = "";
-      setAiText("");
-      setStatus("speaking");
-
-      for await (const chunk of result.stream) {
-        const piece = chunk.text();
-        full += piece;
-        setAiText(full);
-      }
+      const full = await groqChat(messages, GROQ_CHAT_MODEL, 256);
 
       setTurns([...updatedTurns, { role: "ai", text: full }]);
       setAiText("");
+
       // Save AI response to Supabase
       if (convoIdRef.current && userId) {
         addMsg.mutate({ conversation_id: convoIdRef.current, role: "assistant", content: full });
       }
+
       speak(full);
     } catch (err) {
       const msg = "I had trouble connecting. Please try again.";
       setTurns([...updatedTurns, { role: "ai", text: msg }]);
       setAiText("");
       speak(msg);
-      console.error(err);
+      console.error("🔴 Voice AI error:", err);
     }
   };
 

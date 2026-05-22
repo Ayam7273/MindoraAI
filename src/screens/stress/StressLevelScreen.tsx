@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { ChevronLeft, TrendingUp, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { useStressEntries } from "@/hooks/useStressEntries";
 import { useUiStore } from "@/store/uiStore";
-import { genAI } from "@/lib/gemini";
+import { generateText } from "@/lib/aiHelpers";
 import type { StressEntryRow } from "@/types/database";
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -94,17 +94,15 @@ export function StressLevelScreen() {
 
   // ── AI tip ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!genAI || !latestLevel) return;
+    if (!latestLevel) return;
     let cancelled = false;
     setAiLoading(true);
     const label = getMeta(latestLevel).label;
-    genAI
-      .getGenerativeModel({ model: "gemini-1.5-flash" })
-      .generateContent(
-        `Give one short, compassionate stress-management tip (2-3 sentences) for someone with ${label} stress (level ${latestLevel}/5). Be specific and practical.`
-      )
+    generateText(
+      `Give one short, compassionate stress-management tip (2-3 sentences) for someone with ${label} stress (level ${latestLevel}/5). Be specific and practical.`
+    )
       .then((res) => {
-        if (!cancelled) setAiTip(res.response.text());
+        if (!cancelled) setAiTip(res);
       })
       .catch(() => {
         if (!cancelled) setAiTip(null);
@@ -225,7 +223,7 @@ export function StressLevelScreen() {
         </section>
 
         {/* ── AI Insight card ── */}
-        {genAI && (aiLoading || aiTip) && (
+        {(aiLoading || aiTip) && (
           <section className="rounded-2xl bg-amber-50 p-4 shadow-sm ring-1 ring-amber-200">
             <div className="mb-2 flex items-center gap-2">
               <Zap className="h-4 w-4 text-amber-600" />

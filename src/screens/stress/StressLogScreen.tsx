@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, Camera, Circle, StopCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
@@ -7,7 +7,7 @@ import { useUpdateMindoraScore } from "@/hooks/useMindoraScoreHistory";
 import { computeMindoraScore } from "@/lib/mindoraScoreModel";
 import { hapticSuccess } from "@/lib/haptics";
 import { useUiStore } from "@/store/uiStore";
-import { genAI } from "@/lib/gemini";
+import { generateText } from "@/lib/aiHelpers";
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -112,19 +112,6 @@ export function StressLogScreen() {
     if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
-  /** Capture a still frame from the live video via canvas → base64 JPEG */
-  const captureFrame = useCallback((): string | null => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return null;
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    // Return base64 data URL without the prefix
-    return canvas.toDataURL("image/jpeg", 0.85).split(",")[1] ?? null;
-  }, []);
 
   /** "Record" = show a 3-second countdown, then capture frame + analyse */
   const startRecording = useCallback(() => {
@@ -142,47 +129,26 @@ export function StressLogScreen() {
 
   const handleAnalyse = useCallback(async () => {
     setCamState("analysing");
-    const frameB64 = captureFrame(); // grab frame BEFORE stopping stream
     stopStream();
 
     const label = getMeta(level).label;
 
-    if (!genAI) {
-      setAiAnalysis(
-        "AI analysis is unavailable (API key not configured). Your stress entry will still be saved."
-      );
-      setCamState("done");
-      return;
-    }
-
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const promptText = `You are a compassionate mental wellness AI. The user is reporting a stress level of ${level}/5 (${label}). ` +
+        `Based on the self-reported level, provide: ` +
+        `1) Overall stress assessment (2 sentences), ` +
+        `2) What physical signs you would expect at this stress level, ` +
+        `3) Three specific, practical coping strategies for ${label} stress. ` +
+        `Be warm, specific, and non-clinical.`;
 
-      const parts: { text?: string; inlineData?: { mimeType: string; data: string } }[] = [
-        {
-          text: `You are a compassionate mental wellness AI. The user is reporting a stress level of ${level}/5 (${label}). ` +
-            `You have received a facial image captured from their camera. ` +
-            `Based on visible stress indicators (facial tension, expression, posture) AND the self-reported level, provide: ` +
-            `1) Overall stress assessment (2 sentences), ` +
-            `2) What physical signs you observe or would expect at this stress level, ` +
-            `3) Three specific, practical coping strategies for ${label} stress. ` +
-            `Be warm, specific, and non-clinical.`,
-        },
-      ];
-
-      // Attach the captured frame if available
-      if (frameB64) {
-        parts.push({ inlineData: { mimeType: "image/jpeg", data: frameB64 } });
-      }
-
-      const result = await model.generateContent(parts as Parameters<typeof model.generateContent>[0]);
-      setAiAnalysis(result.response.text());
+      const reply = await generateText(promptText).catch(() => null);
+      setAiAnalysis(reply ?? "Could not generate analysis. Your stress entry will still be saved.");
       setCamState("done");
     } catch {
-      setAiAnalysis("Could not generate analysis right now. Your stress entry will still be saved.");
+      setAiAnalysis("Could not generate analysis. Your stress entry will still be saved.");
       setCamState("done");
     }
-  }, [level, stopStream, captureFrame]);
+  }, [level, stopStream]);
 
   const dismissCamera = useCallback(() => {
     stopStream();

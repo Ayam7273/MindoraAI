@@ -1,37 +1,40 @@
+/**
+ * Mindora AI Service
+ * Primary:  Groq (Llama 3.1) — free, fast, no quota issues
+ * Fallback: Gemini 2.0 Flash Lite — used if Groq key not set
+ * Final:    Keyword-based responses — used if both keys are missing
+ */
+import { groqChat, isGroqConfigured, GROQ_CHAT_MODEL } from "@/lib/groq";
 import { genAI } from "@/lib/gemini";
 import type { ChatMessage } from "./chatStorage";
 
-const SYSTEM_PROMPT = `You are Mindora, a compassionate AI companion supporting users with anxiety, stress, and emotional well-being while they await professional clinical care. Be warm, empathetic, non-judgmental, and evidence-informed.
-
-Guidelines:
-- Listen actively and reflect feelings before offering advice
-- Use evidence-based techniques (CBT, mindfulness, grounding) when appropriate
-- Keep responses concise and human — avoid clinical jargon
-- Never diagnose, prescribe, or replace professional mental health care
-- If someone expresses thoughts of self-harm or crisis, gently direct them to professional help and crisis resources (988 in the US)
-- Celebrate small wins and progress
-- Ask follow-up questions to understand the user's situation`;
-
-/** Convert app chat history to the format Gemini expects */
-function toGeminiHistory(messages: ChatMessage[]) {
-  // Exclude the last message — it's the one we're about to send
-  return messages.slice(0, -1).map((m) => ({
-    role: m.role === "user" ? "user" as const : "model" as const,
-    parts: [{ text: m.text }],
-  }));
-}
+const SYSTEM_PROMPT =
+  "You are Mindora, a compassionate AI mental wellness companion. " +
+  "Be warm, empathetic, non-judgmental, and evidence-informed. " +
+  "Keep responses concise (3-5 sentences) and conversational. " +
+  "Never diagnose, prescribe, or replace professional mental health care. " +
+  "If the user mentions self-harm or crisis, respond with compassion and direct them to crisis resources.";
 
 const CRISIS_KEYWORDS = [
   "suicide", "kill myself", "end my life", "self-harm",
   "hurt myself", "don't want to live", "want to die",
 ];
 
-function isCrisisMessage(text: string): boolean {
+function isCrisis(text: string): boolean {
   const t = text.toLowerCase();
   return CRISIS_KEYWORDS.some((kw) => t.includes(kw));
 }
 
-/** Stream the AI response token by token using Gemini */
+/** Yield a text string word-by-word to simulate streaming */
+async function* yieldWords(text: string, signal?: AbortSignal): AsyncGenerator<string> {
+  for (const word of text.split(" ")) {
+    if (signal?.aborted) return;
+    yield word + " ";
+    await new Promise((r) => setTimeout(r, 22));
+  }
+}
+
+/** Main AI response — Groq → Gemini → keyword fallback */
 export async function* streamAIResponse(
   messages: ChatMessage[],
   signal?: AbortSignal,
@@ -39,95 +42,90 @@ export async function* streamAIResponse(
   const last = messages[messages.length - 1];
   if (!last || last.role !== "user") return;
 
-  // §9 — Crisis detection: always respond with crisis message, never pass to model
-  if (isCrisisMessage(last.text)) {
-    const crisisReply =
+  // Crisis always handled locally, never sent to a model
+  if (isCrisis(last.text)) {
+    yield* yieldWords(
       "I hear that you're in a really difficult place right now, and I'm glad you reached out. " +
-      "Please call or text 988 (Suicide & Crisis Lifeline) — they are available 24/7 and truly want to help. " +
-      "In the UK call 116 123 (Samaritans). If you are in immediate danger, please call emergency services. " +
-      "You matter, and support is available right now.";
-    for (const word of crisisReply.split(" ")) {
-      yield word + " ";
-      await new Promise((r) => setTimeout(r, 28));
-    }
+      "Please call or text 988 (Suicide & Crisis Lifeline, US) — available 24/7. " +
+      "In the UK call 116 123 (Samaritans). If you are in immediate danger please call emergency services. " +
+      "You matter, and trained support is available right now.",
+      signal,
+    );
     return;
   }
 
-  // Fall back to keyword-based responses when no API key is set
-  if (!genAI) {
-    yield* fallbackResponse(messages);
-    return;
+  // ── 1. Try Groq (primary) ────────────────────────────────────────────────
+  if (isGroqConfigured()) {
+    try {
+      const groqMessages = [
+        { role: "system" as const, content: SYSTEM_PROMPT },
+        ...messages.slice(0, -1).map((m) => ({
+          role: (m.role === "user" ? "user" : "assistant") as "user" | "assistant",
+          content: m.text,
+        })),
+        { role: "user" as const, content: last.text },
+      ];
+
+      const reply = await groqChat(groqMessages, GROQ_CHAT_MODEL, 512);
+      if (reply) {
+        yield* yieldWords(reply, signal);
+        return;
+      }
+    } catch (err) {
+      console.error("🔴 Groq API error:", err);
+      const errStr = String(err).toLowerCase();
+      if (errStr.includes("429") || errStr.includes("rate")) {
+        console.warn("⚠️  Groq rate limit hit. Free tier: 30 req/min. Falling back to Gemini.");
+      }
+      // Fall through to Gemini
+    }
   }
 
-  try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      systemInstruction: SYSTEM_PROMPT,
-    });
-
-    const chat = model.startChat({
-      history: toGeminiHistory(messages),
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
-    });
-
-    // Use streaming so tokens appear word-by-word
-    const result = await chat.sendMessageStream(last.text);
-
-    for await (const chunk of result.stream) {
-      if (signal?.aborted) return;
-      const text = chunk.text();
-      if (text) yield text;
+  // ── 2. Try Gemini (secondary) ────────────────────────────────────────────
+  if (genAI) {
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+      const history = messages.slice(0, -1)
+        .map((m) => `${m.role === "user" ? "User" : "Mindora"}: ${m.text}`)
+        .join("\n");
+      const prompt = `${SYSTEM_PROMPT}\n\n${history ? history + "\n" : ""}User: ${last.text}\nMindora:`;
+      const result = await model.generateContent(prompt);
+      const reply = result.response.text();
+      if (reply) {
+        yield* yieldWords(reply, signal);
+        return;
+      }
+    } catch (err) {
+      console.error("🔴 Gemini fallback error:", err);
     }
-  } catch (err) {
-    const errMsg = (err instanceof Error ? err.message : String(err)).toLowerCase();
-    console.error("🔴 Gemini API error:", err);
-    if (errMsg.includes("cors") || errMsg.includes("fetch") || errMsg.includes("network") || errMsg.includes("failed to fetch")) {
-      console.error(
-        "⚠️  CORS / network error — Gemini cannot be called directly from the browser in some environments.\n" +
-        "Open browser DevTools → Console/Network and look for a blocked request to 'generativelanguage.googleapis.com'.\n" +
-        "Fix: either (a) remove any HTTP referrer restrictions from your Google API key in the Google Cloud Console,\n" +
-        "or (b) implement the Supabase Edge Function described in GOOGLE_AI_INTEGRATION.md §10."
-      );
-    }
-    yield* fallbackResponse(messages);
   }
+
+  // ── 3. Keyword-based fallback ────────────────────────────────────────────
+  console.warn("⚠️  No AI provider available. Using keyword fallback. Set VITE_GROQ_API_KEY in .env");
+  yield* keywordFallback(last.text, signal);
 }
 
-/** Keyword-based fallback when the API key is missing or a call fails */
-async function* fallbackResponse(messages: ChatMessage[]): AsyncGenerator<string> {
-  const text = messages[messages.length - 1]?.text?.toLowerCase() ?? "";
-
-  const isCrisis =
-    text.includes("suicide") ||
-    text.includes("kill myself") ||
-    text.includes("end my life") ||
-    text.includes("self-harm") ||
-    text.includes("hurt myself");
-
+async function* keywordFallback(text: string, signal?: AbortSignal): AsyncGenerator<string> {
+  const t = text.toLowerCase();
   let reply: string;
-  if (isCrisis) {
-    reply =
-      "I hear that you're hurting right now. Please reach out to a crisis line — you can call or text 988 (US) any time. I'm here for you, and so are trained counselors who can help.";
-  } else if (text.includes("anxious") || text.includes("anxiety") || text.includes("panic")) {
-    reply =
-      "Anxiety can feel overwhelming. Let's try grounding: name 5 things you can see around you right now. This brings your nervous system back to the present moment. What's making you feel anxious today?";
-  } else if (text.includes("stress") || text.includes("overwhelm")) {
-    reply =
-      "It sounds like you're carrying a lot. Take a slow breath with me — inhale for 4 counts, hold for 4, exhale for 6. What's weighing on you most today?";
-  } else if (text.includes("sad") || text.includes("depress") || text.includes("hopeless")) {
-    reply =
-      "I'm sorry you're feeling this way. Those feelings are valid, and you don't have to face them alone. Can you tell me a little more about what's been going on?";
-  } else if (text.includes("sleep") || text.includes("insomnia") || text.includes("tired")) {
-    reply =
-      "Sleep struggles can affect everything. Try keeping a consistent sleep time and avoiding screens 30 minutes before bed. Is there something on your mind keeping you awake?";
+
+  if (t.includes("anxious") || t.includes("anxiety") || t.includes("panic")) {
+    reply = "Anxiety can feel really overwhelming. Let's try a quick grounding exercise — name 5 things you can see around you right now. This helps bring your nervous system back to the present. What's been triggering your anxiety?";
+  } else if (t.includes("stress") || t.includes("overwhelm")) {
+    reply = "It sounds like you're carrying a heavy load. Try taking a slow breath with me — inhale for 4 counts, hold for 4, exhale for 6. That can help regulate your nervous system. What's been weighing on you most?";
+  } else if (t.includes("sad") || t.includes("depress") || t.includes("hopeless") || t.includes("empty")) {
+    reply = "I'm really sorry you're feeling this way. Those feelings are completely valid, and you don't have to face them alone. Can you tell me a bit more about what's been going on for you lately?";
+  } else if (t.includes("sleep") || t.includes("insomnia") || t.includes("can't sleep")) {
+    reply = "Sleep struggles can affect absolutely everything else. A consistent sleep schedule and no screens 30 minutes before bed can make a real difference. Is there something specific that keeps your mind racing at night?";
+  } else if (t.includes("lonely") || t.includes("alone") || t.includes("isolated")) {
+    reply = "Loneliness is one of the most painful feelings there is, and it's more common than you might think. I'm here with you right now. What's been making you feel disconnected?";
+  } else if (t.includes("hello") || t.includes("hi") || t.includes("hey") || t.includes("how are you")) {
+    reply = "Hello! I'm Mindora, your mental wellness companion. I'm here to listen, support, and help you navigate whatever's on your mind. How are you feeling today?";
+  } else if (t.includes("thank")) {
+    reply = "You're very welcome. I'm always here for you. Is there anything else you'd like to talk through?";
   } else {
-    reply =
-      "Thank you for sharing that with me. I'm here to listen and support you. What's been on your mind lately?";
+    reply = "Thank you for sharing that with me. I'm here to listen without judgment. Could you tell me a little more about what's been on your mind?";
   }
 
-  // Simulate streaming word-by-word
-  for (const word of reply.split(" ")) {
-    yield word + " ";
-    await new Promise((r) => setTimeout(r, 28));
-  }
+  yield* yieldWords(reply, signal);
 }
